@@ -1,6 +1,17 @@
 from django.db import models
 
 
+class ContaBancaria(models.Model):
+    nome = models.CharField(max_length=100, verbose_name="Nome da Conta")
+    saldo_inicial = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    def __str__(self):
+        return self.nome
+
+    class Meta:
+        verbose_name_plural = "Contas Bancárias"
+
+
 class Categoria(models.Model):
     nome = models.CharField(max_length=100)
 
@@ -26,6 +37,13 @@ class Transacao(models.Model):
     tipo = models.CharField(max_length=1, choices=TIPO_CHOICES)
     data_pagamento = models.DateField(
         null=True, blank=True, verbose_name="Data do Pagamento"
+    )
+    conta = models.ForeignKey(
+        ContaBancaria,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name="Conta",
     )
 
     def __str__(self):

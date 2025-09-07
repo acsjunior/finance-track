@@ -3,7 +3,27 @@
 {% block title %}Meu Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Meu Dashboard Financeiro</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Meu Dashboard Financeiro</h1>
+    <a href="{% url 'listar_contas' %}" class="btn btn-outline-secondary">Gerenciar Contas</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="d-flex align-items-center">
+            <select name="conta" class="form-select me-2">
+                <option value="">Todas as Contas</option>
+                {% for conta in contas %}
+                <option value="{{ conta.id }}"
+                    {% if conta.id|stringformat:"s" == conta_selecionada_id|stringformat:"s" %}selected{% endif %}>
+                    {{ conta.nome }}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+    </div>
+</div>
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">

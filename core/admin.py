@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import Categoria, Transacao
+from .models import Categoria, ContaBancaria, Transacao
+
+
+@admin.register(ContaBancaria)
+class ContaBancariaAdmin(admin.ModelAdmin):
+    list_display = ("nome", "saldo_inicial")
 
 
 @admin.register(Categoria)
