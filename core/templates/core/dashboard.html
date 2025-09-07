@@ -57,9 +57,9 @@
     <div class="col-lg-4 mb-4">
         <div class="card shadow-sm h-100">
             <div class="card-body text-center">
-                <h5 class="card-title">Balanço do Mês</h5>
-                <p class="fs-2 {% if balanco_do_mes >= 0 %}text-success{% else %}text-danger{% endif %}">
-                    R$ {{ balanco_do_mes|floatformat:2 }}
+                <h5 class="card-title">Saldo Final do Mês</h5> {# Título corrigido #}
+                <p class="fs-2 {% if saldo_final_do_mes >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    R$ {{ saldo_final_do_mes|floatformat:2 }} {# Variável exibida corretamente #}
                 </p>
             </div>
         </div>

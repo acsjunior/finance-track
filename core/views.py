@@ -22,22 +22,21 @@ def dashboard(request):
     # --- 1. FILTRAGEM DE CONTA E MÊS ---
     contas = ContaBancaria.objects.all()
     conta_selecionada_id = request.GET.get("conta")
+
+    transacoes = Transacao.objects.all()
+    contas_a_calcular = contas
+
     if conta_selecionada_id:
         try:
             conta_selecionada_id = int(conta_selecionada_id)
+            transacoes = transacoes.filter(conta_id=conta_selecionada_id)
+            contas_a_calcular = contas.filter(id=conta_selecionada_id)
         except (ValueError, TypeError):
             conta_selecionada_id = None
-
-    # Inicia com todas as transações
-    transacoes = Transacao.objects.all()
-    # Filtra por conta, se uma foi selecionada
-    if conta_selecionada_id:
-        transacoes = transacoes.filter(conta_id=conta_selecionada_id)
 
     # Lógica de paginação por mês
     mes_str = request.GET.get("mes")
     hoje = date.today()
-
     if mes_str:
         try:
             ano, mes = map(int, mes_str.split("-"))
@@ -50,34 +49,28 @@ def dashboard(request):
     mes_anterior = mes_selecionado - relativedelta(months=1)
     mes_seguinte = mes_selecionado + relativedelta(months=1)
 
-    # --- 2. LÓGICA DE PROCESSAMENTO DOS FORMULÁRIOS (POST) ---
-    receita_form = ReceitaForm()
-    despesa_form = DespesaForm()
+    # --- 2. CÁLCULO DO SALDO INICIAL DO MÊS ---
+    # Soma o saldo inicial das contas a serem consideradas (pode ser uma ou todas)
+    saldo_inicial_contas = contas_a_calcular.aggregate(
+        total=Coalesce(Sum("saldo_inicial"), Value(0), output_field=DecimalField())
+    )["total"]
 
-    if request.method == "POST":
-        # Mantém os filtros na URL após salvar
-        redirect_url = f"{request.path}?mes={mes_selecionado.strftime('%Y-%m')}"
-        if conta_selecionada_id:
-            redirect_url += f"&conta={conta_selecionada_id}"
+    # Soma todas as transações pagas ANTES do mês selecionado
+    entradas_passadas = transacoes.filter(
+        data_pagamento__lt=mes_selecionado, tipo="E"
+    ).aggregate(total=Coalesce(Sum("valor"), Value(0), output_field=DecimalField()))[
+        "total"
+    ]
 
-        if "submit_receita" in request.POST:
-            receita_form = ReceitaForm(request.POST)
-            if receita_form.is_valid():
-                receita_form.save()
-                return redirect(redirect_url)
+    saidas_passadas = transacoes.filter(
+        data_pagamento__lt=mes_selecionado, tipo="S"
+    ).aggregate(total=Coalesce(Sum("valor"), Value(0), output_field=DecimalField()))[
+        "total"
+    ]
 
-        elif "submit_despesa" in request.POST:
-            despesa_form = DespesaForm(request.POST)
-            if despesa_form.is_valid():
-                despesa_form.save()
-                return redirect(redirect_url)
+    saldo_inicial_do_mes = saldo_inicial_contas + entradas_passadas - saidas_passadas
 
-    # --- 3. CÁLCULOS FINANCEIROS PARA O PERÍODO ---
-    # Filtra as transações (já filtradas por conta) pelo mês selecionado
-    transacoes_do_mes = transacoes.filter(
-        data__year=mes_selecionado.year, data__month=mes_selecionado.month
-    ).order_by("data")
-
+    # --- 3. CÁLCULOS DENTRO DO MÊS SELECIONADO ---
     entradas_do_mes = transacoes.filter(
         data_pagamento__year=mes_selecionado.year,
         data_pagamento__month=mes_selecionado.month,
@@ -94,7 +87,7 @@ def dashboard(request):
         "total"
     ]
 
-    balanco_do_mes = entradas_do_mes - saidas_do_mes
+    saldo_final_do_mes = saldo_inicial_do_mes + entradas_do_mes - saidas_do_mes
 
     despesas_pendentes = transacoes.filter(
         data__year=mes_selecionado.year,
@@ -103,9 +96,34 @@ def dashboard(request):
         data_pagamento__isnull=True,
     ).order_by("data")
 
-    # --- 4. CONSTRUÇÃO DO CONTEXTO PARA O TEMPLATE ---
+    transacoes_do_mes = Transacao.objects.filter(
+        data__year=mes_selecionado.year, data__month=mes_selecionado.month
+    ).order_by("data")
+    if conta_selecionada_id:
+        transacoes_do_mes = transacoes_do_mes.filter(conta_id=conta_selecionada_id)
+
+    # --- 4. LÓGICA DE FORMULÁRIOS (POST) ---
+    receita_form = ReceitaForm()
+    despesa_form = DespesaForm()
+    if request.method == "POST":
+        redirect_url = f"{request.path}?mes={mes_selecionado.strftime('%Y-%m')}"
+        if conta_selecionada_id:
+            redirect_url += f"&conta={conta_selecionada_id}"
+
+        if "submit_receita" in request.POST:
+            receita_form = ReceitaForm(request.POST)
+            if receita_form.is_valid():
+                receita_form.save()
+                return redirect(redirect_url)
+        elif "submit_despesa" in request.POST:
+            despesa_form = DespesaForm(request.POST)
+            if despesa_form.is_valid():
+                despesa_form.save()
+                return redirect(redirect_url)
+
+    # --- 5. CONTEXTO PARA O TEMPLATE ---
     context = {
-        "balanco_do_mes": balanco_do_mes,
+        "saldo_final_do_mes": saldo_final_do_mes,
         "despesas_pendentes": despesas_pendentes,
         "transacoes_do_mes": transacoes_do_mes,
         "mes_selecionado": mes_selecionado,
