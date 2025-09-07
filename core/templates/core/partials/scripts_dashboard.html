@@ -86,4 +86,20 @@
             fecharModalCategoria();
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Define variáveis JavaScript baseadas nas condições do Django
+        const hasReceitaFormErrors = {% if receita_form.errors %}true{% else %}false{% endif %};
+        const hasDespesaFormErrors = {% if despesa_form.errors %}true{% else %}false{% endif %};
+        
+        // Se o formulário de receita tiver erros, mostre-o
+        if (hasReceitaFormErrors) {
+            mostrarForm('receita');
+        }
+
+        // Se o formulário de despesa tiver erros, mostre-o
+        if (hasDespesaFormErrors) {
+            mostrarForm('despesa');
+        }
+    });
 </script>
