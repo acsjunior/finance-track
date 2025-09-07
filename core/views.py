@@ -95,18 +95,15 @@ def dashboard(request):
     return render(request, "core/dashboard.html", context)
 
 
-@csrf_exempt  # Use com cuidado, ideal para APIs internas simples
+@csrf_exempt
 def adicionar_categoria_api(request):
     if request.method == "POST":
         try:
-            # Pega os dados enviados pelo JavaScript
             data = json.loads(request.body)
             nome_categoria = data.get("nome")
 
             if nome_categoria:
-                # Cria e salva a nova categoria
                 nova_categoria = Categoria.objects.create(nome=nome_categoria)
-                # Retorna uma resposta de sucesso com o ID e nome da nova categoria
                 return JsonResponse(
                     {
                         "status": "success",
@@ -130,34 +127,23 @@ def adicionar_categoria_api(request):
 
 
 def excluir_transacao(request, pk):
-    # Busca a transação pelo ID (pk) ou retorna um erro 404 se não encontrar
     transacao = get_object_or_404(Transacao, pk=pk)
-
-    # Deleta a transação do banco de dados
     transacao.delete()
-
-    # Redireciona de volta para o dashboard
     return redirect("dashboard")
 
 
 def editar_transacao(request, pk):
-    # Busca a transação que queremos editar ou retorna um erro 404
     transacao = get_object_or_404(Transacao, pk=pk)
 
-    # Se o formulário está sendo enviado (método POST)
     if request.method == "POST":
-        # Cria o formulário com os dados enviados E com a instância da transação
         form = TransacaoForm(request.POST, instance=transacao)
         if form.is_valid():
-            form.save()  # Salva as alterações na transação existente
+            form.save()
             return redirect("dashboard")
 
-    # Se o usuário está apenas chegando na página (método GET)
     else:
-        # Cria o formulário preenchido com os dados da transação
         form = TransacaoForm(instance=transacao)
 
-    # Renderiza uma nova página HTML com o formulário de edição
     return render(
         request, "core/editar_transacao.html", {"form": form, "transacao": transacao}
     )
