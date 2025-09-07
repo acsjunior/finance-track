@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Transação</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<body>
+
+    <div class="card" style="max-width: 600px; margin: 3em auto;">
+
+        <h2>Editando: {{ transacao.descricao }}</h2>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button type="submit" class="btn btn-receita" style="margin-top: 1em;">Salvar Alterações</button>
+
+            <a href="{% url 'dashboard' %}" class="btn btn-despesa"
+                style="text-decoration: none; margin-left: 10px;">Cancelar</a>
+        </form>
+    </div>
+
+</body>
+
+</html>

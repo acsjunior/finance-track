@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Meu Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Meu Dashboard Financeiro</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="botoes-transacao">
+            <button onclick="mostrarForm('receita')" class="btn btn-success me-2">Nova Receita</button>
+            <button onclick="mostrarForm('despesa')" class="btn btn-danger">Nova Despesa</button>
+        </div>
+
+        <form id="form-receita" method="post" style="display:none; margin-top: 1.5em;">
+        </form>
+        <form id="form-despesa" method="post" style="display:none; margin-top: 1.5em;">
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
+    <div>
+        {% if mes_anterior %}
+        <a href="?mes={{ mes_anterior|date:'Y-m' }}" class="btn btn-outline-primary">&larr; Mês Anterior</a>
+        {% endif %}
+    </div>
+    <h2 class="mb-0 h4">{{ mes_selecionado|date:"F \d\e Y"|capfirst }}</h2>
+    <div>
+        {% if mes_seguinte %}
+        <a href="?mes={{ mes_seguinte|date:'Y-m' }}" class="btn btn-outline-primary">Próximo Mês &rarr;</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Balanço do Mês</h5>
+                <p class="fs-2 {% if balanco_do_mes >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    R$ {{ balanco_do_mes|floatformat:2 }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Despesas Pendentes</h5>
+                {% if despesas_pendentes %}
+                <ul class="list-group list-group-flush">
+                    {% for despesa in despesas_pendentes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ despesa.descricao }} <small class="text-muted">({{ despesa.categoria }})</small></span>
+                        <span class="badge bg-warning text-dark">R$ {{ despesa.valor|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mt-3">Nenhuma despesa pendente para este mês.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">Transações do Mês</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Vencimento</th>
+                        <th>Pagamento</th>
+                        <th>Valor</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transacao in transacoes_do_mes %}
+                    <tr>
+                        <td>{{ transacao.descricao }}</td>
+                        <td><span class="badge bg-secondary fw-normal">{{ transacao.categoria.nome }}</span></td>
+                        <td>{{ transacao.data|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if transacao.data_pagamento %}
+                            {{ transacao.data_pagamento|date:"d/m/Y" }}
+                            {% else %}
+                            <span class="badge bg-danger">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="{% if transacao.tipo == 'E' %}text-success{% else %}text-danger{% endif %}">
+                            {% if transacao.tipo == 'E' %}+{% else %}-{% endif %} R$ {{ transacao.valor|floatformat:2 }}
+                        </td>
+                        <td>
+                            <a href="{% url 'editar_transacao' pk=transacao.pk %}"
+                                class="btn btn-sm btn-outline-primary">Editar</a>
+                            <a href="{% url 'excluir_transacao' pk=transacao.pk %}"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Tem certeza?');">Excluir</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Nenhuma transação encontrada para este mês.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% include 'core/partials/modal_categoria.html' %}
+{% include 'core/partials/scripts_dashboard.html' %}
+
+{% endblock %}

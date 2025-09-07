@@ -1,0 +1,89 @@
+<script>
+    // Função para alternar a visibilidade dos formulários de receita e despesa
+    function mostrarForm(tipo) {
+        const formReceita = document.getElementById('form-receita');
+        const formDespesa = document.getElementById('form-despesa');
+
+        if (tipo === 'receita') {
+            formReceita.style.display = 'block';
+            formDespesa.style.display = 'none';
+        } else if (tipo === 'despesa') {
+            formDespesa.style.display = 'block';
+            formReceita.style.display = 'none';
+        }
+    }
+
+    // --- LÓGICA PARA O MODAL DE ADICIONAR CATEGORIA ---
+
+    // Pega o elemento do modal no HTML
+    const modal = document.getElementById('modal-categoria');
+
+    // Função para abrir o modal
+    function abrirModalCategoria() {
+        modal.style.display = 'block';
+        // Foca automaticamente no campo de input para o usuário já poder digitar
+        document.getElementById('input-nova-categoria').focus();
+    }
+
+    // Função para fechar o modal
+    function fecharModalCategoria() {
+        modal.style.display = 'none';
+        // Limpa o campo de input ao fechar
+        document.getElementById('input-nova-categoria').value = '';
+    }
+
+    // Função assíncrona para salvar a nova categoria via API
+    async function salvarNovaCategoria() {
+        const input = document.getElementById('input-nova-categoria');
+        const nomeCategoria = input.value.trim();
+
+        // Validação simples para não salvar categorias em branco
+        if (!nomeCategoria) {
+            alert('Por favor, digite o nome da categoria.');
+            return;
+        }
+
+        try {
+            // Faz a chamada para a nossa API no backend
+            const response = await fetch('/api/adicionar-categoria/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nome: nomeCategoria })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                // Se a API retornou sucesso:
+                // 1. Encontra todos os campos <select> de categoria na página
+                const selects = document.querySelectorAll('select[name="categoria"]');
+
+                // 2. Cria uma nova <option> com os dados retornados pela API
+                const novaOpcao = new Option(data.nome, data.id, true, true);
+
+                // 3. Adiciona a nova opção a cada um dos <select> e a define como selecionada
+                selects.forEach(select => {
+                    select.add(novaOpcao.cloneNode(true));
+                    select.value = data.id;
+                });
+
+                // 4. Fecha o modal
+                fecharModalCategoria();
+            } else {
+                alert('Erro ao salvar categoria: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            alert('Ocorreu um erro de comunicação com o servidor.');
+        }
+    }
+
+    // Bônus: Fecha o modal se o usuário clicar na área escura fora dele
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            fecharModalCategoria();
+        }
+    }
+</script>
