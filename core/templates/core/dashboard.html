@@ -33,8 +33,41 @@
         </div>
 
         <form id="form-receita" method="post" style="display:none; margin-top: 1.5em;">
+            <h3 class="mb-3">Nova Receita</h3>
+            {% csrf_token %}
+            {% for field in receita_form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}:</label>
+                    {% if field.name == 'categoria' %}
+                        <div class="input-group">
+                            {{ field }}
+                            <button type="button" class="btn btn-outline-primary btn-add-categoria" onclick="abrirModalCategoria()">+</button>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit" name="submit_receita" class="btn btn-success">Salvar Receita</button>
         </form>
+
         <form id="form-despesa" method="post" style="display:none; margin-top: 1.5em;">
+            <h3 class="mb-3">Nova Despesa</h3>
+            {% csrf_token %}
+            {% for field in despesa_form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}:</label>
+                     {% if field.name == 'categoria' %}
+                        <div class="input-group">
+                            {{ field }}
+                            <button type="button" class="btn btn-outline-primary btn-add-categoria" onclick="abrirModalCategoria()">+</button>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit" name="submit_despesa" class="btn btn-danger">Salvar Despesa</button>
         </form>
     </div>
 </div>
