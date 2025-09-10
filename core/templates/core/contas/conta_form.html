@@ -1,17 +1,6 @@
-{% extends 'core/base.html' %}
-{% block title %}{% if conta %}Editar Conta{% else %}Nova Conta{% endif %}{% endblock %}
+{% extends "core/base.html" %}
+{% block title %}{{ acao }} Conta{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm" style="max-width: 600px; margin: 2em auto;">
-    <div class="card-body">
-        <h2 class="card-title mb-4">{% if conta %}Editando: {{ conta.nome }}{% else %}Cadastrar Nova Conta{% endif %}
-        </h2>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-success">Salvar</button>
-            <a href="{% url 'contas:listar_contas' %}" class="btn btn-secondary">Cancelar</a>
-        </form>
-    </div>
-</div>
+    {% include "core/partials/_form_base.html" with form=form acao=acao cancel_url=cancel_url titulo=titulo %}
 {% endblock %}

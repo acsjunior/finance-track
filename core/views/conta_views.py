@@ -9,6 +9,7 @@ from core.views.generic_crud import (
 
 from ..forms import ContaBancariaForm
 from ..models import ContaBancaria
+from ..views.mixins import FormContextMixin
 
 
 class ContaListView(GenericListView):
@@ -18,18 +19,22 @@ class ContaListView(GenericListView):
     ordering = ["nome"]
 
 
-class ContaCreateView(GenericCreateView):
+class ContaCreateView(FormContextMixin, GenericCreateView):
     model = ContaBancaria
     form_class = ContaBancariaForm
     template_name = "core/contas/conta_form.html"
     success_url = reverse_lazy("contas:listar_contas")
+    cancel_url_name = "contas:listar_contas"
+    titulo = "Nova Conta"
 
 
-class ContaUpdateView(GenericUpdateView):
+class ContaUpdateView(FormContextMixin, GenericUpdateView):
     model = ContaBancaria
     form_class = ContaBancariaForm
     template_name = "core/contas/conta_form.html"
     success_url = reverse_lazy("contas:listar_contas")
+    cancel_url_name = "contas:listar_contas"
+    titulo = "Editar Conta"
 
 
 class ContaDeleteView(GenericDeleteView):

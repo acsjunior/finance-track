@@ -9,6 +9,7 @@ from core.views.generic_crud import (
 
 from ..forms.categoria_forms import CategoriaForm
 from ..models import Categoria
+from ..views.mixins import FormContextMixin
 
 
 class CategoriaListView(GenericListView):
@@ -18,18 +19,22 @@ class CategoriaListView(GenericListView):
     ordering = ["nome"]
 
 
-class CategoriaCreateView(GenericCreateView):
+class CategoriaCreateView(FormContextMixin, GenericCreateView):
     model = Categoria
     form_class = CategoriaForm
     template_name = "core/categorias/categoria_form.html"
     success_url = reverse_lazy("categorias:listar_categorias")
+    cancel_url_name = "categorias:listar_categorias"
+    titulo = "Nova Categoria"
 
 
-class CategoriaUpdateView(GenericUpdateView):
+class CategoriaUpdateView(FormContextMixin, GenericUpdateView):
     model = Categoria
     form_class = CategoriaForm
     template_name = "core/categorias/categoria_form.html"
     success_url = reverse_lazy("categorias:listar_categorias")
+    cancel_url_name = "categorias:listar_categorias"
+    titulo = "Editar Categoria"
 
 
 class CategoriaDeleteView(GenericDeleteView):

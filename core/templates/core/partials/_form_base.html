@@ -1,0 +1,16 @@
+<div class="card shadow-sm" style="max-width: 600px; margin: 2em auto;">
+    <div class="card-body">
+        {% if titulo %}
+            <h2 class="card-title mb-4">{{ titulo }}</h2>
+        {% else %}
+            <h2 class="card-title mb-4">{{ acao }}</h2>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-success">Salvar</button>
+            <a href="{{ cancel_url }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>

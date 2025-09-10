@@ -1,19 +1,7 @@
-{% extends 'core/base.html' %}
+{% extends "core/base.html" %}
 {% block title %}{{ acao }} Categoria{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>{{ acao }} Categoria</h1>
-</div>
+    {% include "core/partials/_form_base.html" with form=form acao=acao cancel_url=cancel_url titulo=titulo %}
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }} {# Ou renderize o formulário com mais controle, se preferir #}
-            <button type="submit" class="btn btn-success">Salvar</button>
-            <a href="{% url 'categorias:listar_categorias' %}" class="btn btn-secondary">Cancelar</a>
-        </form>
-    </div>
-</div>
 {% endblock %}
