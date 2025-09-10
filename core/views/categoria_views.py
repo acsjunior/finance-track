@@ -1,62 +1,37 @@
-from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.urls import reverse_lazy
+
+from core.views.generic_crud import (
+    GenericCreateView,
+    GenericDeleteView,
+    GenericListView,
+    GenericUpdateView,
+)
 
 from ..forms.categoria_forms import CategoriaForm
 from ..models import Categoria
 
 
-def listar_categorias(request):
-    categorias = Categoria.objects.all().order_by("nome")
-    return render(
-        request, "core/categorias/listar_categorias.html", {"categorias": categorias}
-    )
+class CategoriaListView(GenericListView):
+    model = Categoria
+    template_name = "core/categorias/listar_categorias.html"
+    context_object_name = "categorias"
+    ordering = ["nome"]
 
 
-def criar_categoria(request):
-    if request.method == "POST":
-        form = CategoriaForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Categoria criada com sucesso!")
-            return redirect("categorias:listar_categorias")
-        else:
-            messages.error(request, "Erro ao criar categoria. Verifique os dados.")
-    else:
-        form = CategoriaForm()
-    return render(
-        request, "core/categorias/categoria_form.html", {"form": form, "acao": "Criar"}
-    )
+class CategoriaCreateView(GenericCreateView):
+    model = Categoria
+    form_class = CategoriaForm
+    template_name = "core/categorias/categoria_form.html"
+    success_url = reverse_lazy("categorias:listar_categorias")
 
 
-def editar_categoria(request, pk):
-    categoria = get_object_or_404(Categoria, pk=pk)
-    if request.method == "POST":
-        form = CategoriaForm(request.POST, instance=categoria)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Categoria atualizada com sucesso!")
-            return redirect("categorias:listar_categorias")
-        else:
-            messages.error(request, "Erro ao atualizar categoria. Verifique os dados.")
-    else:
-        form = CategoriaForm(instance=categoria)
-    return render(
-        request,
-        "core/categorias/categoria_form.html",
-        {"form": form, "categoria": categoria, "acao": "Editar"},
-    )
+class CategoriaUpdateView(GenericUpdateView):
+    model = Categoria
+    form_class = CategoriaForm
+    template_name = "core/categorias/categoria_form.html"
+    success_url = reverse_lazy("categorias:listar_categorias")
 
 
-@require_POST
-def excluir_categoria(request, pk):
-    categoria = get_object_or_404(Categoria, pk=pk)
-    try:
-        categoria.delete()
-        messages.success(request, "Categoria excluída com sucesso!")
-    except Exception:
-        messages.error(
-            request,
-            "Não foi possível excluir a categoria. Existem transações vinculadas a ela.",
-        )
-    return redirect("categorias:listar_categorias")
+class CategoriaDeleteView(GenericDeleteView):
+    model = Categoria
+    success_url = reverse_lazy("categorias:listar_categorias")
