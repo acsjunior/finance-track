@@ -13,9 +13,8 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .forms import (
+from .main_forms import (
     CartaoCreditoForm,
-    ContaBancariaForm,
     DespesaCartaoForm,
     DespesaForm,
     FaturaForm,
@@ -219,47 +218,6 @@ def editar_transacao(request, pk):
     return render(
         request, "core/editar_transacao.html", {"form": form, "transacao": transacao}
     )
-
-
-def listar_contas(request):
-    contas = ContaBancaria.objects.all()
-    return render(request, "core/listar_contas.html", {"contas": contas})
-
-
-def criar_conta(request):
-    if request.method == "POST":
-        form = ContaBancariaForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("listar_contas")
-    else:
-        form = ContaBancariaForm()
-    return render(request, "core/conta_form.html", {"form": form})
-
-
-def editar_conta(request, pk):
-    conta = get_object_or_404(ContaBancaria, pk=pk)
-    if request.method == "POST":
-        form = ContaBancariaForm(request.POST, instance=conta)
-        if form.is_valid():
-            form.save()
-            return redirect("listar_contas")
-    else:
-        form = ContaBancariaForm(instance=conta)
-    return render(request, "core/conta_form.html", {"form": form, "conta": conta})
-
-
-def excluir_conta(request, pk):
-    conta = get_object_or_404(ContaBancaria, pk=pk)
-    try:
-        conta.delete()
-        messages.success(request, "Conta excluída com sucesso.")
-    except Exception:
-        messages.error(
-            request,
-            "Não foi possível excluir a conta. Existem transações vinculadas a ela.",
-        )
-    return redirect("listar_contas")
 
 
 def get_safe_day_in_month(year, month, day):

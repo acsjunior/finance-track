@@ -40,7 +40,7 @@ class Transacao(models.Model):
     )
     conta = models.ForeignKey(
         ContaBancaria,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name="Conta",
