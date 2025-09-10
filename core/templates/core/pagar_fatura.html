@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Pagar Fatura{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm" style="max-width: 600px; margin: 2em auto;">
+    <div class="card-body">
+        <h2 class="card-title mb-1">Pagar Fatura de {{ fatura.cartao.nome }}</h2>
+        <p class="text-muted mb-4">Referente a {{ fatura.mes_referencia|date:"F/Y"|capfirst }} (Venc. {{ fatura.data_vencimento|date:"d/m/Y" }})</p>
+
+        <div class="alert alert-info">
+            Valor a Pagar: <strong class="fs-5">R$ {{ fatura.valor_total|floatformat:2 }}</strong>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+                <a href="{% url 'detalhe_fatura' fatura_pk=fatura.pk %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Novo Lançamento - {{ cartao.nome }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 2em auto;">
+    
+    {% include 'core/partials/_form_lancamento_cartao.html' %}
+
+    <div class="mt-4 text-center">
+         <a href="{% url 'listar_cartoes' %}" class="btn btn-secondary">Voltar para a lista de cartões</a>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'core/base.html' %}
+{% block title %}Faturas de {{ cartao.nome }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Faturas - {{ cartao.nome }}</h1>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for fatura in faturas %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Fatura de {{ fatura.mes_referencia|date:"F/Y"|capfirst }}</h5>
+                            <small class="text-muted">
+                                Vencimento em {{ fatura.data_vencimento|date:"d/m/Y" }}
+                                {% if fatura.paga %}
+                                    <span class="badge bg-success ms-2">Paga</span>
+                                {% else %}
+                                    <span class="badge bg-danger ms-2">Pendente</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold d-block mb-2">R$ {{ fatura.valor_total|floatformat:2 }}</span>
+                            <a href="{% url 'detalhe_fatura' fatura_pk=fatura.pk %}" class="btn btn-sm btn-info text-white me-2">Detalhes</a>
+                            
+                            {% comment %} Botão Editar só se a fatura ainda não estiver paga {% endcomment %}
+                            {% if not fatura.paga %}
+                                <a href="{% url 'editar_fatura' fatura_pk=fatura.pk %}" class="btn btn-sm btn-primary me-2">Editar</a>
+                            {% endif %}
+
+                            {% comment %} Botão Pagar só se a fatura não estiver paga e tiver um valor maior que zero {% endcomment %}
+                            {% if not fatura.paga and fatura.valor_total > 0 %}
+                                <a href="{% url 'pagar_fatura' fatura_pk=fatura.pk %}" class="btn btn-sm btn-success">Pagar</a>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted">Nenhuma fatura encontrada. Lance uma nova transação para criar a primeira fatura.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        {% include 'core/partials/_form_lancamento_cartao.html' %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'listar_cartoes' %}" class="btn btn-secondary">Voltar</a>
+</div>
+
+{% endblock %}

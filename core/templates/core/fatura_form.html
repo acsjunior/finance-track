@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+{% block title %}Editar Fatura{% endblock %}
+{% block content %}
+<div class="card shadow-sm" style="max-width: 600px; margin: 2em auto;">
+    <div class="card-body">
+        <h2 class="card-title mb-4">Editando Fatura de {{ fatura.mes_referencia|date:"F/Y"|capfirst }}</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-success">Salvar Alterações</button>
+            <a href="{% url 'listar_faturas' cartao_pk=fatura.cartao.pk %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

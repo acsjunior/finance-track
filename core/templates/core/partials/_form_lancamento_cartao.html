@@ -1,0 +1,83 @@
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">Novo Lançamento</h5>
+        <div class="botoes-transacao mb-3">
+            <button onclick="mostrarFormCartao('despesa')" class="btn btn-sm btn-danger me-2">Nova Despesa</button>
+            <button onclick="mostrarFormCartao('receita')" class="btn btn-sm btn-success">Nova Receita (Estorno)</button>
+        </div>
+
+        <form id="form-despesa-cartao" action="{{ form_action }}" method="post" style="display: none;">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ despesa_form.descricao.id_for_label }}" class="form-label">{{ despesa_form.descricao.label }}:</label>
+                {{ despesa_form.descricao }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ despesa_form.valor.id_for_label }}" class="form-label">{{ despesa_form.valor.label }} Total:</label>
+                {{ despesa_form.valor }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ despesa_form.numero_parcelas.id_for_label }}" class="form-label">{{ despesa_form.numero_parcelas.label }}:</label>
+                {{ despesa_form.numero_parcelas }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ despesa_form.categoria.id_for_label }}" class="form-label">{{ despesa_form.categoria.label }}:</label>
+                {{ despesa_form.categoria }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ despesa_form.data.id_for_label }}" class="form-label">{{ despesa_form.data.label }}:</label>
+                {{ despesa_form.data }}
+            </div>
+             <div class="mb-3">
+                <label for="{{ despesa_form.fatura_manual.id_for_label }}" class="form-label">{{ despesa_form.fatura_manual.label }}:</label>
+                {{ despesa_form.fatura_manual }}
+            </div>
+
+            <button type="submit" name="submit_despesa_cartao" class="btn btn-danger w-100 mt-2">Lançar Despesa</button>
+        </form>
+        <form id="form-receita-cartao" action="{% url 'lancar_transacao_cartao' pk=cartao.pk %}" method="post" style="display: none;">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ receita_form.descricao.id_for_label }}" class="form-label">{{ receita_form.descricao.label }}:</label>
+                {{ receita_form.descricao }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ receita_form.valor.id_for_label }}" class="form-label">{{ receita_form.valor.label }}:</label>
+                {{ receita_form.valor }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ receita_form.categoria.id_for_label }}" class="form-label">{{ receita_form.categoria.label }}:</label>
+                {{ receita_form.categoria }}
+            </div>
+            <div class="mb-3">
+                <label for="{{ receita_form.data.id_for_label }}" class="form-label">{{ receita_form.data.label }}:</label>
+                {{ receita_form.data }}
+            </div>
+             <div class="mb-3">
+                <label for="{{ receita_form.fatura_manual.id_for_label }}" class="form-label">{{ receita_form.fatura_manual.label }}:</label>
+                {{ receita_form.fatura_manual }}
+            </div>
+            <button type="submit" name="submit_receita_cartao" class="btn btn-success w-100 mt-2">Lançar Receita</button>
+        </form>
+        </div>
+</div>
+
+<script>
+    function mostrarFormCartao(tipo) {
+        const formReceita = document.getElementById('form-receita-cartao');
+        const formDespesa = document.getElementById('form-despesa-cartao');
+        if (tipo === 'receita') {
+            formReceita.style.display = 'block';
+            formDespesa.style.display = 'none';
+        } else if (tipo === 'despesa') {
+            formDespesa.style.display = 'block'; 
+            formReceita.style.display = 'none';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasReceitaFormErrors = {% if receita_form.errors %}true{% else %}false{% endif %};
+        const hasDespesaFormErrors = {% if despesa_form.errors %}true{% else %}false{% endif %};
+        if (hasReceitaFormErrors) { mostrarFormCartao('receita'); }
+        if (hasDespesaFormErrors) { mostrarFormCartao('despesa'); }
+    });
+</script>
