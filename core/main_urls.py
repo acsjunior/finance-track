@@ -46,4 +46,5 @@ urlpatterns = [
         name="excluir_transacao_cartao",
     ),
     path("contas/", include("core.urls.conta_urls")),
+    path("categorias/", include("core.urls.categoria_urls")),
 ]

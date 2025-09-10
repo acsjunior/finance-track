@@ -1,0 +1,52 @@
+{# core/templates/core/categorias/listar_categorias.html #}
+{% extends 'core/base.html' %}
+{% block title %}Minhas Categorias{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Minhas Categorias</h1>
+    <a href="{% url 'categorias:criar_categoria' %}" class="btn btn-success">Adicionar Nova Categoria</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome da Categoria</th>
+                        <th>Ícone</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for categoria in categorias %}
+                    <tr>
+                        <td>{{ categoria.nome }}</td>
+                        <td>
+                            {% if categoria.icone %}
+                                <i class="{{ categoria.icone }}"></i> {{ categoria.icone }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'categorias:editar_categoria' pk=categoria.pk %}" class="btn btn-sm btn-primary">Editar</a>
+                            <form action="{% url 'categorias:excluir_categoria' categoria.pk %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta categoria?');">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">Nenhuma categoria cadastrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Voltar ao Dashboard</a>
+    </div>
+</div>
+{% endblock %}

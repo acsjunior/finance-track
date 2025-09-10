@@ -14,6 +14,12 @@ class ContaBancaria(models.Model):
 
 class Categoria(models.Model):
     nome = models.CharField(max_length=100)
+    icone = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Classe CSS do ícone (ex: bi bi-house, bi bi-car). Consulte Bootstrap Icons.",
+    )
 
     def __str__(self):
         return self.nome
