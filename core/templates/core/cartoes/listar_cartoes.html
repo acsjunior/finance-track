@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Meus Cartões de Crédito</h1>
-    <a href="{% url 'criar_cartao' %}" class="btn btn-success">Adicionar Novo Cartão</a>
+    <a href="{% url 'cartoes:criar_cartao' %}" class="btn btn-success">Adicionar Novo Cartão</a>
 </div>
 
 <div class="card shadow-sm">
@@ -30,8 +30,11 @@
                         <td>Dia {{ cartao.dia_vencimento }}</td>
                         <td>
                             <a href="{% url 'listar_faturas' cartao_pk=cartao.pk %}" class="btn btn-sm btn-info text-white">Ver Faturas</a>
-                            <a href="{% url 'editar_cartao' pk=cartao.pk %}" class="btn btn-sm btn-primary">Editar</a>
-                            <a href="{% url 'excluir_cartao' pk=cartao.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza?');">Excluir</a>
+                            <a href="{% url 'cartoes:editar_cartao' pk=cartao.pk %}" class="btn btn-sm btn-primary">Editar</a>
+                            <form action="{% url 'cartoes:excluir_cartao' cartao.pk %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este cartão?');">Excluir</button>
+                            </form>
                         </td>
                     </tr>
                     {% empty %}

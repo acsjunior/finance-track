@@ -3,7 +3,7 @@ from datetime import date
 
 from django import forms
 
-from .models import CartaoCredito, ContaBancaria, Fatura, Transacao, TransacaoCartao
+from .models import ContaBancaria, Fatura, Transacao, TransacaoCartao
 
 
 class TransacaoBaseForm(forms.ModelForm):
@@ -82,12 +82,6 @@ class TransacaoForm(TransacaoBaseForm):
             )
 
         return cleaned_data
-
-
-class CartaoCreditoForm(forms.ModelForm):
-    class Meta:
-        model = CartaoCredito
-        fields = ["nome", "limite", "dia_fechamento", "dia_vencimento"]
 
 
 class TransacaoCartaoBaseForm(forms.ModelForm):

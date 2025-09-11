@@ -1,0 +1,7 @@
+{% extends "core/base.html" %}
+{% block title %}{{ acao }} Cartão{% endblock %}
+
+{% block content %}
+    {% include "core/partials/_form_base.html" with form=form acao=acao cancel_url=cancel_url titulo=titulo %}
+
+{% endblock %}

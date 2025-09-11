@@ -12,10 +12,6 @@ urlpatterns = [
     ),
     path("excluir/<int:pk>/", main_views.excluir_transacao, name="excluir_transacao"),
     path("editar/<int:pk>/", main_views.editar_transacao, name="editar_transacao"),
-    path("cartoes/", main_views.listar_cartoes, name="listar_cartoes"),
-    path("cartoes/novo/", main_views.criar_cartao, name="criar_cartao"),
-    path("cartoes/<int:pk>/editar/", main_views.editar_cartao, name="editar_cartao"),
-    path("cartoes/<int:pk>/excluir/", main_views.excluir_cartao, name="excluir_cartao"),
     path(
         "cartoes/<int:cartao_pk>/faturas/",
         main_views.listar_faturas,
@@ -47,4 +43,5 @@ urlpatterns = [
     ),
     path("contas/", include("core.urls.conta_urls")),
     path("categorias/", include("core.urls.categoria_urls")),
+    path("cartoes/", include("core.urls.cartao_urls")),
 ]

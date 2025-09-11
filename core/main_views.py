@@ -14,7 +14,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .main_forms import (
-    CartaoCreditoForm,
     DespesaCartaoForm,
     DespesaForm,
     FaturaForm,
@@ -316,11 +315,6 @@ def processar_lancamento_cartao(request, cartao):
     return form, fatura_impactada
 
 
-def listar_cartoes(request):
-    cartoes = CartaoCredito.objects.all()
-    return render(request, "core/listar_cartoes.html", {"cartoes": cartoes})
-
-
 def lancar_transacao_cartao(request, pk):
     cartao = get_object_or_404(CartaoCredito, pk=pk)
     if request.method == "POST":
@@ -485,42 +479,6 @@ def editar_fatura(request, fatura_pk):
     else:
         form = FaturaForm(instance=fatura)
     return render(request, "core/fatura_form.html", {"form": form, "fatura": fatura})
-
-
-def criar_cartao(request):
-    if request.method == "POST":
-        form = CartaoCreditoForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("listar_cartoes")
-    else:
-        form = CartaoCreditoForm()
-    return render(request, "core/cartao_form.html", {"form": form})
-
-
-def editar_cartao(request, pk):
-    cartao = get_object_or_404(CartaoCredito, pk=pk)
-    if request.method == "POST":
-        form = CartaoCreditoForm(request.POST, instance=cartao)
-        if form.is_valid():
-            form.save()
-            return redirect("listar_cartoes")
-    else:
-        form = CartaoCreditoForm(instance=cartao)
-    return render(request, "core/cartao_form.html", {"form": form, "cartao": cartao})
-
-
-def excluir_cartao(request, pk):
-    cartao = get_object_or_404(CartaoCredito, pk=pk)
-    try:
-        cartao.delete()
-        messages.success(request, "Cartão excluído com sucesso.")
-    except Exception:
-        messages.error(
-            request,
-            "Não foi possível excluir o cartão. Existem transações vinculadas a ele.",
-        )
-    return redirect("listar_cartoes")
 
 
 def pagar_fatura(request, fatura_pk):
