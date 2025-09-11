@@ -1,51 +1,13 @@
 {% extends 'core/base.html' %}
+{% load custom_tags %}
 
-{% block title %}Meus Cartões de Crédito{% endblock %}
+{% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Meus Cartões de Crédito</h1>
-    <a href="{% url 'cartoes:criar_cartao' %}" class="btn btn-success">Adicionar Novo Cartão</a>
-</div>
+    {% include "core/partials/_list_base.html" %}
+{% endblock %}
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Nome do Cartão</th>
-                        <th>Limite</th>
-                        <th>Dia do Fechamento</th>
-                        <th>Dia do Vencimento</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cartao in cartoes %}
-                    <tr>
-                        <td>{{ cartao.nome }}</td>
-                        <td>R$ {{ cartao.limite|floatformat:2 }}</td>
-                        <td>Dia {{ cartao.dia_fechamento }}</td>
-                        <td>Dia {{ cartao.dia_vencimento }}</td>
-                        <td>
-                            <a href="{% url 'listar_faturas' cartao_pk=cartao.pk %}" class="btn btn-sm btn-info text-white">Ver Faturas</a>
-                            <a href="{% url 'cartoes:editar_cartao' pk=cartao.pk %}" class="btn btn-sm btn-primary">Editar</a>
-                            <form action="{% url 'cartoes:excluir_cartao' cartao.pk %}" method="post" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este cartão?');">Excluir</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Nenhum cartão de crédito cadastrado.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Voltar ao Dashboard</a>
-    </div>
-</div>
+{% block extra_actions %}
+    <a href="{% url 'listar_faturas' cartao_pk=obj.pk %}" 
+       class="btn btn-sm btn-info text-white">Ver Faturas</a>
 {% endblock %}

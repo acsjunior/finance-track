@@ -1,45 +1,8 @@
 {% extends 'core/base.html' %}
-{% block title %}Minhas Contas Bancárias{% endblock %}
+{% load custom_tags %}
+
+{% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Minhas Contas Bancárias</h1>
-    <a href="{% url 'contas:criar_conta' %}" class="btn btn-success">Adicionar Nova Conta</a>
-</div>
-
-<div class="card shadow-sm">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Nome da Conta</th>
-                        <th>Saldo Inicial</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for conta in contas %}
-                    <tr>
-                        <td>{{ conta.nome }}</td>
-                        <td>R$ {{ conta.saldo_inicial|floatformat:2 }}</td>
-                        <td>
-                            <a href="{% url 'contas:editar_conta' pk=conta.pk %}" class="btn btn-sm btn-primary">Editar</a>
-                            <form action="{% url 'contas:excluir_conta' conta.pk %}" method="post" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta conta?');">Excluir</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center text-muted py-4">Nenhuma conta cadastrada.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Voltar ao Dashboard</a>
-    </div>
-</div>
+    {% include "core/partials/_list_base.html" %}
 {% endblock %}

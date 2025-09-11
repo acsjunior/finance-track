@@ -1,0 +1,45 @@
+{% load custom_tags %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ titulo }}</h1>
+    <a href="{{ criar_url }}" class="btn btn-success">{{ criar_label }}</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        {% for header in headers %}
+                            <th>{{ header }}</th>
+                        {% endfor %}
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for obj in object_list %}
+                    <tr>
+                        {% for field in fields %}
+                            <td>{{ obj|get_attr:field }}</td>
+                        {% endfor %}
+                        <td>
+                            {% block extra_actions %}{% endblock %}
+                            <a href="{% url editar_url_name pk=obj.pk %}" class="btn btn-sm btn-primary">Editar</a>
+                            <form action="{% url excluir_url_name obj.pk %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este item?');">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ headers|length|add:'1' }}" class="text-center text-muted py-4">{{ empty_message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Voltar ao Dashboard</a>
+    </div>
+</div>

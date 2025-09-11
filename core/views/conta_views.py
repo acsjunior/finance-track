@@ -9,14 +9,22 @@ from core.views.generic_crud import (
 
 from ..forms import ContaBancariaForm
 from ..models import ContaBancaria
-from ..views.mixins import FormContextMixin
+from ..views.mixins import FormContextMixin, ListContextMixin
 
 
-class ContaListView(GenericListView):
+class ContaListView(ListContextMixin, GenericListView):
     model = ContaBancaria
     template_name = "core/contas/listar_contas.html"
     context_object_name = "contas"
     ordering = ["nome"]
+    titulo = "Minhas Contas"
+    criar_url_name = "contas:criar_conta"
+    criar_label = "Adicionar Nova Conta"
+    editar_url_name = "contas:editar_conta"
+    excluir_url_name = "contas:excluir_conta"
+    headers = ["Nome da Conta", "Saldo Inicial"]
+    fields = ["nome", "saldo_inicial"]
+    empty_message = "Nenhuma conta cadastrada."
 
 
 class ContaCreateView(FormContextMixin, GenericCreateView):
