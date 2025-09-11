@@ -24,7 +24,14 @@
                             <td>{{ obj|get_attr:field }}</td>
                         {% endfor %}
                         <td>
-                            {% block extra_actions %}{% endblock %}
+                            {% if row_actions %}
+                                {% for action in row_actions %}
+                                    <a href="{% dynamic_url action.url_name obj action %}"
+                                       class="btn btn-sm {{ action.css_class|default:'btn-info text-white' }}">
+                                       {{ action.label }}
+                                    </a>
+                                {% endfor %}
+                            {% endif %}
                             <a href="{% url editar_url_name pk=obj.pk %}" class="btn btn-sm btn-primary">Editar</a>
                             <form action="{% url excluir_url_name obj.pk %}" method="post" style="display:inline;">
                                 {% csrf_token %}

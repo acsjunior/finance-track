@@ -25,6 +25,14 @@ class CartaoListView(ListContextMixin, GenericListView):
     headers = ["Nome do Cartão", "Limite", "Dia do Fechamento", "Dia do Vencimento"]
     fields = ["nome", "limite", "dia_fechamento", "dia_vencimento"]
     empty_message = "Nenhum cartão de crédito cadastrado."
+    row_actions = [
+        {
+            "url_name": "cartoes:listar_faturas",
+            "pk_field": "cartao_pk",
+            "label": "Ver Faturas",
+            "css_class": "btn-info text-white",
+        },
+    ]
 
 
 class CartaoCreateView(FormContextMixin, GenericCreateView):
