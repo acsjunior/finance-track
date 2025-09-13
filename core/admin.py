@@ -1,3 +1,31 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import BankAccount, Category, CreditCard, Invoice, Transaction
+
+
+@admin.register(BankAccount)
+class BankAccountAdmin(admin.ModelAdmin):
+    list_display = ("name", "balance")
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    search_fields = ("name",)
+
+
+@admin.register(CreditCard)
+class CreditCardAdmin(admin.ModelAdmin):
+    list_display = ("name", "limit", "due_day", "closing_day")
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ("credit_card", "due_date", "is_paid")
+    list_filter = ("is_paid", "credit_card")
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ("description", "amount", "date", "category", "transaction_type")
+    list_filter = ("transaction_type", "date", "category")
+    search_fields = ("description",)
