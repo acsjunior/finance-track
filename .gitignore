@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.manifest
+*.spec
+
+# Django
+*.log
+*.pot
+local_settings.py
+settings_local.py
+media/
+staticfiles/
+static/
+
+# Database
+*.sqlite3
+*.db
+
+# VS Code
+.vscode/
+
+# Environment
+.env
+.env.*
+venv/
+ENV/
+.envrc
+
+# Poetry
+poetry.lock
+
+# MacOS
+.DS_Store
+
+# Others
+*.swp
+*.swo
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Migrations
+**/migrations/*
+!**/migrations/__init__.py
+
+# MacOS
+.DS_Store
