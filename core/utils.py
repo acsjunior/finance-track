@@ -3,6 +3,8 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
+from core.models import Fatura
+
 
 def get_safe_day_in_month(year, month, day):
     ultimo_dia_do_mes = calendar.monthrange(year, month)[1]

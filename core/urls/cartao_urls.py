@@ -1,11 +1,17 @@
 from django.urls import path
 
-from ..views import fatura_views, transacao_cartao_views
+from ..views import transacao_cartao_views
 from ..views.cartao_views import (
     CartaoCreateView,
     CartaoDeleteView,
     CartaoListView,
     CartaoUpdateView,
+)
+from ..views.fatura_views import (
+    FaturaDetailView,
+    FaturaListView,
+    FaturaPagarView,
+    FaturaUpdateView,
 )
 
 app_name = "cartoes"
@@ -16,19 +22,15 @@ urlpatterns = [
     path("<int:pk>/editar/", CartaoUpdateView.as_view(), name="editar_cartao"),
     path("<int:pk>/excluir/", CartaoDeleteView.as_view(), name="excluir_cartao"),
     # URLs para Faturas de um Cartão
-    path(
-        "<int:cartao_pk>/faturas/", fatura_views.listar_faturas, name="listar_faturas"
-    ),
-    path(
-        "faturas/<int:fatura_pk>/", fatura_views.detalhe_fatura, name="detalhe_fatura"
-    ),
+    path("<int:cartao_pk>/faturas/", FaturaListView.as_view(), name="listar_faturas"),
+    path("faturas/<int:fatura_pk>/", FaturaDetailView.as_view(), name="detalhe_fatura"),
     path(
         "faturas/<int:fatura_pk>/editar/",
-        fatura_views.editar_fatura,
+        FaturaUpdateView.as_view(),
         name="editar_fatura",
     ),
     path(
-        "faturas/<int:fatura_pk>/pagar/", fatura_views.pagar_fatura, name="pagar_fatura"
+        "faturas/<int:fatura_pk>/pagar/", FaturaPagarView.as_view(), name="pagar_fatura"
     ),
     # URLs para Transações de Cartão
     path(

@@ -1,8 +1,18 @@
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import DecimalField, Sum, Value
 from django.db.models.functions import Coalesce
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse, reverse_lazy
+from django.views.generic import FormView
+from django.views.generic.detail import SingleObjectMixin
+
+from core.views.generic_crud import (
+    GenericDetailView,
+    GenericListView,
+    GenericUpdateView,
+)
+from core.views.mixins import FormContextMixin, ListContextMixin
 
 from ..forms.fatura_forms import (
     FaturaForm,
@@ -14,154 +24,190 @@ from ..forms.transacao_cartao_forms import (
 )
 from ..models import (
     CartaoCredito,
-    Categoria,
     Fatura,
-    Transacao,
 )
 from .transacao_cartao_views import processar_lancamento_cartao
 
 
-def listar_faturas(request, cartao_pk):
-    cartao = get_object_or_404(CartaoCredito, pk=cartao_pk)
+class FaturaListView(ListContextMixin, GenericListView):
+    model = Fatura
+    template_name = "core/cartoes/faturas/listar_faturas.html"
+    context_object_name = "faturas"
+    ordering = ["-mes_referencia"]
+    empty_message = "Nenhuma fatura encontrada para este cartão."
 
-    if request.method == "POST":
-        form_processado, _ = processar_lancamento_cartao(request, cartao)
+    def get_cartao(self):
+        return get_object_or_404(CartaoCredito, pk=self.kwargs["cartao_pk"])
 
-        if "submit_despesa_cartao" in request.POST:
-            despesa_form = form_processado
-        else:
-            receita_form = form_processado
+    def get_despesa_form(self):
+        return DespesaCartaoForm(cartao=self.get_cartao())
 
-        if form_processado.is_valid():
-            return redirect("listar_faturas", cartao_pk=cartao.pk)
+    def get_receita_form(self):
+        return ReceitaCartaoForm(cartao=self.get_cartao())
 
-    else:
-        despesa_form = DespesaCartaoForm(cartao=cartao)
-        receita_form = ReceitaCartaoForm(cartao=cartao)
-
-    faturas = (
-        Fatura.objects.filter(cartao=cartao)
-        .annotate(
-            soma_transacoes=Coalesce(
-                Sum("transacoes__valor"), Value(0), output_field=DecimalField()
+    def get_queryset(self):
+        cartao = self.get_cartao()
+        return (
+            super()
+            .get_queryset()
+            .filter(cartao=cartao)
+            .annotate(
+                soma_transacoes=Coalesce(
+                    Sum("transacoes__valor"), Value(0), output_field=DecimalField()
+                )
             )
         )
-        .order_by("-mes_referencia")
-    )
 
-    for fatura in faturas:
-        if fatura.valor_total != fatura.soma_transacoes:
-            fatura.valor_total = fatura.soma_transacoes
-            fatura.save()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cartao = self.get_cartao()
+        context.update(
+            {
+                "cartao": cartao,
+                "titulo": f"Faturas de {cartao.nome}",
+                "despesa_form": self.get_despesa_form(),
+                "receita_form": self.get_receita_form(),
+                "form_action": reverse(
+                    "cartoes:lancar_transacao_cartao", kwargs={"cartao_pk": cartao.pk}
+                ),
+            }
+        )
+        return context
 
-    context = {
-        "cartao": cartao,
-        "faturas": faturas,
-        "despesa_form": despesa_form,
-        "receita_form": receita_form,
-        "form_action": reverse(
-            "cartoes:listar_faturas", kwargs={"cartao_pk": cartao.pk}
-        ),
+
+class FaturaDetailView(GenericDetailView):
+    model = Fatura
+    template_name = "core/cartoes/faturas/detalhe_fatura.html"
+    context_object_name = "fatura"
+    pk_url_kwarg = "fatura_pk"
+
+    FORM_MAPPING = {
+        "submit_despesa_cartao": "despesa_form",
+        "submit_receita_cartao": "receita_form",
     }
-    return render(request, "core/cartoes/faturas/listar_faturas.html", context)
 
+    def get_cartao(self):
+        return self.object.cartao
 
-def detalhe_fatura(request, fatura_pk):
-    fatura = get_object_or_404(Fatura, pk=fatura_pk)
-    cartao = fatura.cartao
+    def get_despesa_form(self):
+        return DespesaCartaoForm(cartao=self.get_cartao())
 
-    if request.method == "POST":
+    def get_receita_form(self):
+        return ReceitaCartaoForm(cartao=self.get_cartao())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        fatura = self.object
+        cartao = self.get_cartao()
+
+        fatura.atualizar_valor_total(save=False)
+
+        context.update(
+            {
+                "cartao": cartao,
+                "despesas": fatura.transacoes.all().order_by("-data"),
+                "despesa_form": kwargs.get("despesa_form", self.get_despesa_form()),
+                "receita_form": kwargs.get("receita_form", self.get_receita_form()),
+                "total_fatura": fatura.valor_total,
+                "titulo": "Detalhes da Fatura",
+                "form_action": reverse(
+                    "cartoes:detalhe_fatura", kwargs={"fatura_pk": fatura.pk}
+                ),
+            }
+        )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        cartao = self.get_cartao()
         form_processado, fatura_impactada = processar_lancamento_cartao(request, cartao)
+        target_context_key = None
+
+        for submit_key, context_key in self.FORM_MAPPING.items():
+            if submit_key in request.POST:
+                target_context_key = context_key
+                break
 
         if form_processado.is_valid():
-            return redirect("detalhe_fatura", fatura_pk=fatura_impactada.pk)
+            return redirect("cartoes:detalhe_fatura", fatura_pk=fatura_impactada.pk)
 
-        despesa_form = (
-            form_processado
-            if "submit_despesa_cartao" in request.POST
-            else DespesaCartaoForm(cartao=cartao)
+        kwargs_context = (
+            {target_context_key: form_processado} if target_context_key else {}
         )
-        receita_form = (
-            form_processado
-            if "submit_receita_cartao" in request.POST
-            else ReceitaCartaoForm(cartao=cartao)
+        context = self.get_context_data(**kwargs_context)
+
+        messages.error(
+            request, "Erro ao processar o lançamento. Verifique os dados fornecidos."
+        )
+        return self.render_to_response(context)
+
+
+class FaturaUpdateView(FormContextMixin, GenericUpdateView):
+    model = Fatura
+    form_class = FaturaForm
+    template_name = "core/cartoes/faturas/fatura_form.html"
+
+    @property
+    def titulo(self):
+        if self.object:
+            return f"Editar Fatura {self.object.mes_referencia.strftime('%B/%Y')}"
+        return "Editar Fatura"
+
+    def get_success_url(self):
+        return self.object.get_list_url()
+
+    def get_cancel_url_name(self):
+        return self.object.get_detail_url()
+
+
+class FaturaPagarView(SingleObjectMixin, FormView):
+    model = Fatura
+    form_class = PagamentoFaturaForm
+    template_name = "core/cartoes/faturas/pagar_fatura.html"
+    pk_url_kwarg = "fatura_pk"
+
+    def form_valid(self, form):
+        fatura = self.object
+        try:
+            fatura.pagar(
+                conta=form.cleaned_data["conta"],
+                data_pagamento=form.cleaned_data["data_pagamento"],
+            )
+        except ValidationError as e:
+            messages.error(self.request, e.message)
+            return self.form_invalid(form)
+
+        messages.success(
+            self.request, f"Fatura de {fatura.cartao.nome} paga com sucesso!"
+        )
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Erro ao processar o pagamento da fatura. Verifique os dados fornecidos.",
+        )
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        if "from_list" in self.request.GET:
+            return reverse_lazy(
+                "cartoes:listar_faturas", kwargs={"cartao_pk": self.object.cartao.pk}
+            )
+        return reverse_lazy(
+            "cartoes:detalhe_fatura", kwargs={"fatura_pk": self.object.pk}
         )
 
-    else:
-        despesa_form = DespesaCartaoForm(cartao=cartao)
-        receita_form = ReceitaCartaoForm(cartao=cartao)
-
-    despesas = fatura.transacoes.all().order_by("-data")
-
-    total_fatura = despesas.aggregate(
-        soma=Coalesce(Sum("valor"), Value(0), output_field=DecimalField())
-    )["soma"]
-    if fatura.valor_total != total_fatura:
-        fatura.valor_total = total_fatura
-        fatura.save()
-
-    context = {
-        "fatura": fatura,
-        "cartao": cartao,
-        "despesas": despesas,
-        "despesa_form": despesa_form,
-        "receita_form": receita_form,
-        "form_action": reverse("detalhe_fatura", args=[fatura.pk]),
-    }
-    return render(request, "core/cartoes/faturas/detalhe_fatura.html", context)
-
-
-def editar_fatura(request, fatura_pk):
-    fatura = get_object_or_404(Fatura, pk=fatura_pk)
-    if request.method == "POST":
-        form = FaturaForm(request.POST, instance=fatura)
-        if form.is_valid():
-            form.save()
-            return redirect("listar_faturas", cartao_pk=fatura.cartao.pk)
-    else:
-        form = FaturaForm(instance=fatura)
-    return render(
-        request,
-        "core/cartoes/faturas/fatura_form.html",
-        {"form": form, "fatura": fatura},
-    )
-
-
-def pagar_fatura(request, fatura_pk):
-    fatura = get_object_or_404(Fatura, pk=fatura_pk)
-
-    if request.method == "POST":
-        form = PagamentoFaturaForm(request.POST)
-        if form.is_valid():
-            conta_pagamento = form.cleaned_data["conta"]
-            data_do_pagamento = form.cleaned_data["data_pagamento"]
-            categoria_cartao, created = Categoria.objects.get_or_create(
-                nome="Cartão de Crédito"
-            )
-
-            transacao = Transacao.objects.create(
-                descricao=f"Pagamento Fatura {fatura.cartao.nome} ({fatura.mes_referencia.strftime('%b/%Y')})",
-                valor=fatura.valor_total,
-                data=data_do_pagamento,
-                data_pagamento=data_do_pagamento,
-                categoria=categoria_cartao,
-                tipo="S",
-                conta=conta_pagamento,
-            )
-
-            fatura.paga = True
-            fatura.transacao_pagamento = transacao
-            fatura.save()
-
-            messages.success(
-                request, f"Fatura de {fatura.cartao.nome} paga com sucesso!"
-            )
-            return redirect("detalhe_fatura", fatura_pk=fatura.pk)
-    else:
-        form = PagamentoFaturaForm()
-
-    context = {
-        "fatura": fatura,
-        "form": form,
-    }
-    return render(request, "core/cartoes/faturas/pagar_fatura.html", context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        fatura = self.get_object()
+        context.update(
+            {
+                "fatura": fatura,
+                "titulo": f"Pagar Fatura {fatura.mes_referencia.strftime('%B/%Y')}",
+                "form_action": reverse(
+                    "cartoes:pagar_fatura", kwargs={"fatura_pk": fatura.pk}
+                ),
+            }
+        )
+        return context

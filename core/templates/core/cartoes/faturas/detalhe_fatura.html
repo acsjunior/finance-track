@@ -1,17 +1,12 @@
 {% extends 'core/base.html' %}
+{% load custom_tags %}
 
-{% block title %}Fatura {{ fatura.cartao.nome }} - {{ fatura.mes_referencia|date:"F/Y"|capfirst }}{% endblock %}
+{% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Detalhes da Fatura - {{ fatura.cartao.nome }}</h1>
-
-<div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
-    <h2 class="mb-0 h4">{{ fatura.mes_referencia|date:"F \d\e Y"|capfirst }}</h2>
-    <a href="{% url 'listar_faturas' cartao_pk=fatura.cartao.pk %}" class="btn btn-outline-primary">Voltar para a Lista de Faturas</a>
-</div>
+<h1 class="mb-4">{{ titulo }}</h1>
 
 <div class="row">
-
     <div class="col-lg-8 mb-4">
         <div class="card shadow-sm">
             <div class="card-body">
@@ -20,33 +15,31 @@
                         <h5 class="card-title mb-0">Fatura de {{ fatura.mes_referencia|date:"F/Y"|capfirst }}</h5>
                         <small class="text-muted">Vencimento em: {{ fatura.data_vencimento|date:"d/m/Y" }}</small>
                         <div class="mt-2">
-                            {% if fatura.paga %}
-                                <span class="badge bg-success">Paga</span>
-                            {% else %}
-                                <span class="badge bg-danger">Pendente</span>
-                            {% endif %}
+                            {{ fatura|status_badge|safe }}
                         </div>
                     </div>
                     <div>
-                        <span class="fs-4 fw-bold {% if fatura.valor_total >= 0 %}text-danger{% else %}text-success{% endif %}">
+                        <span class="fs-4 fw-bold {% if fatura.valor_total < 0 %}text-success{% else %}text-danger{% endif %}">
                             R$ {{ fatura.valor_total|floatformat:2 }}
                         </span>
                     </div>
                 </div>
+
                 {% if not fatura.paga and fatura.valor_total > 0 %}
-                    <a href="{% url 'pagar_fatura' fatura_pk=fatura.pk %}" class="btn btn-success w-100 mt-3">Pagar Fatura</a>
+
+                    <a href="{% url 'cartoes:pagar_fatura' fatura_pk=fatura.pk %}" class="btn btn-success w-100 mt-3">Pagar Fatura</a>
                 {% endif %}
-                
+
                 <h6 class="mt-4">Lançamentos na Fatura</h6>
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle"> {# Adicionado table-hover e align-middle #}
-                        <thead> {# Adicionado cabeçalho para a tabela #}
+                    <table class="table table-sm table-hover align-middle">
+                        <thead>
                             <tr>
                                 <th>Data</th>
                                 <th>Descrição</th>
                                 <th>Categoria</th>
                                 <th class="text-end">Valor</th>
-                                <th>Ações</th> {# NOVA COLUNA PARA O BOTÃO DE EDIÇÃO #}
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,12 +48,12 @@
                                 <td>{{ despesa.data|date:"d/m" }}</td>
                                 <td>{{ despesa.descricao }}</td>
                                 <td><span class="badge bg-secondary fw-normal">{{ despesa.categoria.nome }}</span></td>
-                                <td class="text-end {% if despesa.valor < 0 %}text-success{% else %}text-danger{% endif %}">
-                                    {% if despesa.valor < 0 %}+{% else %}-{% endif %} R$ {{ despesa.valor|floatformat:2|cut:"-" }}
+                                <td class="text-end">
+                                    {{ despesa.valor|format_dinheiro_sinal|safe }} {# <--- Usando o novo filtro #}
                                 </td>
                                 <td>
-                                    <a href="{% url 'editar_transacao_cartao' pk=despesa.pk %}" class="btn btn-sm btn-primary me-2">Editar</a>                        
-                                    <form action="{% url 'excluir_transacao_cartao' pk=despesa.pk %}" method="post" class="d-inline">
+                                    <a href="{% url 'cartoes:editar_transacao_cartao' pk=despesa.pk %}" class="btn btn-sm btn-primary me-2">Editar</a>
+                                    <form action="{% url 'cartoes:excluir_transacao_cartao' pk=despesa.pk %}" method="post" class="d-inline">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir este lançamento? Esta ação é irreversível.');">Excluir</button>
                                     </form>
@@ -77,6 +70,7 @@
             </div>
         </div>
     </div>
+
     <div class="col-lg-4 mb-4">
         {% include 'core/partials/_form_lancamento_cartao.html' %}
     </div>

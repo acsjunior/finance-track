@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Pagar Fatura{% endblock %}
+{% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
 <div class="card shadow-sm" style="max-width: 600px; margin: 2em auto;">
@@ -17,7 +17,7 @@
             {{ form.as_p }}
             <div class="mt-4">
                 <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
-                <a href="{% url 'detalhe_fatura' fatura_pk=fatura.pk %}" class="btn btn-secondary">Cancelar</a>
+                <a href="{% url 'cartoes:detalhe_fatura' fatura_pk=fatura.pk %}" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
     </div>

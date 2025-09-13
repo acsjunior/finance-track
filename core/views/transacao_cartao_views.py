@@ -112,7 +112,7 @@ def lancar_transacao_cartao(request, pk):
                 )
 
             messages.success(request, "Lançamento registrado com sucesso!")
-            return redirect("listar_faturas", cartao_pk=cartao.pk)
+            return redirect("cartoes:listar_faturas", cartao_pk=cartao.pk)
         else:
             messages.error(request, "Por favor, corrija os erros no formulário.")
             context = {
@@ -140,7 +140,9 @@ def lancar_transacao_cartao(request, pk):
 def editar_transacao_cartao(request, pk):
     transacao = get_object_or_404(TransacaoCartao, pk=pk)
 
-    redirect_to_fatura_detail = reverse("detalhe_fatura", args=[transacao.fatura.pk])
+    redirect_to_fatura_detail = reverse(
+        "cartoes:detalhe_fatura", args=[transacao.fatura.pk]
+    )
 
     FormClass = DespesaCartaoForm if transacao.valor >= 0 else ReceitaCartaoForm
 
@@ -222,4 +224,4 @@ def excluir_transacao_cartao(request, pk):
     fatura.save()
 
     messages.success(request, "Transação de cartão excluída com sucesso!")
-    return redirect("detalhe_fatura", fatura_pk=fatura.pk)
+    return redirect("cartoes:detalhe_fatura", fatura_pk=fatura.pk)

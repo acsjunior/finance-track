@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import DecimalField, Sum, Value
+from django.db.models.functions import Coalesce
 
 
 class ContaBancaria(models.Model):
@@ -88,7 +90,6 @@ class Fatura(models.Model):
     valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     paga = models.BooleanField(default=False)
 
-    # Esta transação será a "ponte" com o dashboard principal
     transacao_pagamento = models.OneToOneField(
         Transacao, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -97,8 +98,49 @@ class Fatura(models.Model):
         return f"Fatura de {self.cartao.nome} - {self.mes_referencia.strftime('%B/%Y')}"
 
     class Meta:
-        # Garante que só existe uma fatura por cartão para um determinado mês
         unique_together = ("cartao", "mes_referencia")
+
+    def atualizar_valor_total(self, save=True):
+        total = self.transacoes.aggregate(
+            soma=Coalesce(Sum("valor"), Value(0), output_field=DecimalField())
+        )["soma"]
+        self.valor_total = total
+        if save:
+            self.save()
+        return self.valor_total
+
+    def pagar(self, conta, data_pagamento, categoria_nome: str = "Cartão de Crédito"):
+        from django.core.exceptions import ValidationError
+        from django.db import transaction
+
+        from .models import Categoria, Transacao
+
+        if self.paga:
+            raise ValidationError("Fatura já está marcada como paga.")
+
+        if conta is None:
+            raise ValidationError("Conta de pagamento inválida.")
+
+        with transaction.atomic():
+            categoria_cartao, _ = Categoria.objects.get_or_create(nome=categoria_nome)
+
+            descricao = f"Pagamento Fatura {self.cartao.nome} ({self.mes_referencia.strftime('%b/%Y')})"
+
+            transacao = Transacao.objects.create(
+                descricao=descricao,
+                valor=self.valor_total,
+                data=data_pagamento,
+                data_pagamento=data_pagamento,
+                categoria=categoria_cartao,
+                tipo="S",
+                conta=conta,
+            )
+
+            self.paga = True
+            self.transacao_pagamento = transacao
+            self.save(update_fields=["paga", "transacao_pagamento"])
+
+        return transacao
 
 
 class CompraParcelada(models.Model):

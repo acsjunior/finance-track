@@ -8,7 +8,7 @@
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit" class="btn btn-success">Salvar Alterações</button>
-            <a href="{% url 'listar_faturas' cartao_pk=fatura.cartao.pk %}" class="btn btn-secondary">Cancelar</a>
+            <a href="{% url 'cartoes:listar_faturas' cartao_pk=fatura.cartao.pk %}" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </div>

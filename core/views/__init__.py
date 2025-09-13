@@ -17,10 +17,10 @@ from .conta_views import (
     ContaUpdateView,
 )
 from .fatura_views import (
-    detalhe_fatura,
-    editar_fatura,
-    listar_faturas,
-    pagar_fatura,
+    FaturaDetailView,
+    FaturaListView,
+    FaturaPagarView,
+    FaturaUpdateView,
 )
 from .transacao_cartao_views import (
     editar_transacao_cartao,

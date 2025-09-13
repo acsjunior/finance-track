@@ -1,0 +1,27 @@
+<div class="card shadow-sm mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Fatura de {{ fatura.mes_referencia|date:"F/Y"|capfirst }}</h5>
+            <small class="text-muted">
+                Vencimento em {{ fatura.data_vencimento|date:"d/m/Y" }}
+                {% if fatura.paga %}
+                    <span class="badge bg-success ms-2">Paga</span>
+                {% else %}
+                    <span class="badge bg-danger ms-2">Pendente</span>
+                {% endif %}
+            </small>
+        </div>
+        <div class="text-end">
+            <span class="fw-bold d-block mb-2">R$ {{ fatura.valor_total|floatformat:2 }}</span>
+            <a href="{% url 'cartoes:detalhe_fatura' fatura_pk=fatura.pk %}" class="btn btn-sm btn-info text-white me-2">Detalhes</a>
+
+            {% if not fatura.paga %}
+                <a href="{% url 'cartoes:editar_fatura' fatura_pk=fatura.pk %}" class="btn btn-sm btn-primary me-2">Editar</a>
+            {% endif %}
+
+            {% if not fatura.paga and fatura.valor_total > 0 %}
+                <a href="{% url 'cartoes:pagar_fatura' fatura_pk=fatura.pk %}" class="btn btn-sm btn-success">Pagar</a>
+            {% endif %}
+        </div>
+    </div>
+</div>

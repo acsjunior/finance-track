@@ -1,7 +1,12 @@
-# core/views/generic_crud.py
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 
 class GenericListView(ListView):
@@ -67,3 +72,17 @@ class GenericDeleteView(DeleteView):
                 f"Ele pode estar vinculado a outros registros.",
             )
         return redirect(self.success_url)
+
+
+class GenericDetailView(DetailView):
+    template_name = ""
+    context_object_name = "object"
+    pk_url_kwarg = "pk"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        model_name = getattr(
+            self.model._meta, "verbose_name", self.model.__name__
+        ).capitalize()
+        context["titulo"] = f"Detalhes do {model_name}"
+        return context
