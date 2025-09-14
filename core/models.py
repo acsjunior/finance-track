@@ -1,5 +1,6 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
+from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -194,6 +195,14 @@ class Transaction(models.Model):
         verbose_name="Cartão de Crédito",
     )
 
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Fatura",
+    )
+
     def clean(self):
         """
         Validates that a transaction is associated with either a bank account or a credit card, but not both.
@@ -211,10 +220,40 @@ class Transaction(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Performs full validation before saving the transaction instance.
+        Performs full validation and automatically assigns the correct invoice for credit card transactions.
+        If the transaction is linked to a credit card, calculates the invoice period and due date,
+        creates or retrieves the corresponding Invoice, and sets it on the transaction before saving.
         Calls full_clean() to ensure all model validations are checked before saving.
         """
         self.full_clean()
+
+        if self.credit_card:
+            card = self.credit_card
+            trans_date = self.date
+
+            if trans_date.day <= card.closing_day:
+                invoice_end_date = date(
+                    trans_date.year, trans_date.month, card.closing_day
+                )
+            else:
+                next_month = trans_date + relativedelta(months=1)
+                invoice_end_date = date(
+                    next_month.year, next_month.month, card.closing_day
+                )
+
+            due_date_month = invoice_end_date + relativedelta(months=1)
+            invoice_due_date = date(
+                due_date_month.year, due_date_month.month, card.due_day
+            )
+
+            invoice, created = Invoice.objects.get_or_create(
+                credit_card=card,
+                end_date=invoice_end_date,
+                defaults={"due_date": invoice_due_date},
+            )
+
+            self.invoice = invoice
+
         super().save(*args, **kwargs)
 
     def __str__(self):
