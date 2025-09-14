@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Transações</title>
+</head>
+<body>
+    <h1>Extrato de Transações</h1>
+    <a href="{% url 'transaction_add' %}">Adicionar Nova Transação</a>
+    <hr>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Ações</th> </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction.date|date:"d/m/Y" }}</td>
+                <td>{{ transaction.description }}</td>
+                <td>R$ {{ transaction.amount }}</td>
+                <td>{{ transaction.get_transaction_type_display }}</td>
+                <td>{{ transaction.category.name|default:"Sem Categoria" }}</td>
+                <td>
+                    <a href="{% url 'transaction_edit' transaction.pk %}">Editar</a>
+                    <a href="{% url 'transaction_delete' transaction.pk %}">Excluir</a>
+                </td>
+            </tr>
+            {% empty %}
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

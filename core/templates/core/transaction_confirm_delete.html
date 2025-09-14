@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar Exclusão</title>
+</head>
+<body>
+    <h1>Excluir Transação</h1>
+    <p>Você tem certeza que deseja excluir a transação "{{ object.description }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Sim, excluir</button>
+        <a href="{% url 'transaction_list' %}">Cancelar</a>
+    </form>
+</body>
+</html>
