@@ -241,10 +241,15 @@ class Transaction(models.Model):
                     next_month.year, next_month.month, card.closing_day
                 )
 
-            due_date_month = invoice_end_date + relativedelta(months=1)
-            invoice_due_date = date(
-                due_date_month.year, due_date_month.month, card.due_day
-            )
+            if card.due_day > card.closing_day:
+                invoice_due_date = date(
+                    invoice_end_date.year, invoice_end_date.month, card.due_day
+                )
+            else:
+                due_date_month = invoice_end_date + relativedelta(months=1)
+                invoice_due_date = date(
+                    due_date_month.year, due_date_month.month, card.due_day
+                )
 
             invoice, created = Invoice.objects.get_or_create(
                 credit_card=card,
