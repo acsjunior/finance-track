@@ -51,6 +51,6 @@ class TransactionAdmin(admin.ModelAdmin):
     Displays transaction details, enables filtering and searching in the admin interface.
     """
 
-    list_display = ("description", "amount", "date", "category", "transaction_type")
-    list_filter = ("transaction_type", "date", "category")
+    list_display = ("description", "amount", "date", "bank_account", "credit_card")
+    list_filter = ("transaction_type", "date", "bank_account", "credit_card")
     search_fields = ("description",)
