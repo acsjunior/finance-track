@@ -5,11 +5,30 @@ from .models import BankAccount, CreditCard, Transaction
 
 class TransactionForm(forms.ModelForm):
     """
-    Form for creating and validating Transaction instances.
+    Form for creating and validating Transaction instances, including support for installment purchases.
 
-    Provides a choice field for selecting either a bank account or a credit card,
-    and custom validation to ensure one is selected and set correctly.
+    Provides fields for selecting a bank account or credit card, and for specifying installment options.
+    Custom validation ensures that required fields are set correctly for both single and installment transactions.
     """
+
+    is_installment = forms.BooleanField(
+        label="É compra parcelada?",
+        required=False,
+    )
+
+    installments = forms.IntegerField(
+        label="Número de Parcelas",
+        required=False,
+        min_value=2,
+    )
+
+    installment_frequency = forms.ChoiceField(
+        label="Frequência",
+        required=False,
+        choices=[
+            ("monthly", "Mensal"),
+        ],
+    )
 
     account_choice = forms.ChoiceField(
         label="Conta / Cartão",
@@ -53,8 +72,9 @@ class TransactionForm(forms.ModelForm):
 
     def clean(self):
         """
-        Custom validation for the form.
+        Performs custom validation for the transaction form.
         Sets the bank_account or credit_card on the instance based on the selected account_choice.
+        Validates required fields for installment purchases (installments and frequency).
         Returns the cleaned data dictionary.
         """
         cleaned_data = super().clean()
@@ -69,5 +89,20 @@ class TransactionForm(forms.ModelForm):
             elif account_type == "creditcard":
                 self.instance.credit_card = CreditCard.objects.get(pk=account_id)
                 self.instance.bank_account = None
+
+        is_installment = cleaned_data.get("is_installment")
+        installments = cleaned_data.get("installments")
+        frequency = cleaned_data.get("installment_frequency")
+
+        if is_installment:
+            if not installments:
+                self.add_error(
+                    "installments", "Este campo é obrigatório para compras parceladas."
+                )
+            if not frequency:
+                self.add_error(
+                    "installment_frequency",
+                    "Este campo é obrigatório para compras parceladas.",
+                )
 
         return cleaned_data
