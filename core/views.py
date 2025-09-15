@@ -1,7 +1,14 @@
 from dateutil.relativedelta import relativedelta
+from django.db.models import Sum
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 from .forms import InvoiceForm, TransactionForm
 from .models import Invoice, Transaction
@@ -152,3 +159,32 @@ class InvoiceUpdateView(UpdateView):
     form_class = InvoiceForm
     template_name = "core/invoice_form.html"
     success_url = reverse_lazy("invoice_list")
+
+
+class InvoiceDetailView(DetailView):
+    """
+    Displays the details of a single invoice, including its related transactions and total amount.
+
+    Attributes:
+        model (Invoice): The model to display.
+        template_name (str): Template used for rendering.
+        context_object_name (str): Name of the context variable for the invoice.
+    """
+
+    model = Invoice
+    template_name = "core/invoice_detail.html"
+    context_object_name = "invoice"
+
+    def get_context_data(self, **kwargs):
+        """
+        Extends the context data for the invoice detail view.
+        Adds the related transactions and their total amount to the context.
+        """
+        context = super().get_context_data(**kwargs)
+        transactions = self.object.transaction_set.all().order_by("date")
+        total = transactions.aggregate(total_amount=Sum("amount"))["total_amount"] or 0
+
+        context["transactions"] = transactions
+        context["total"] = total
+
+        return context

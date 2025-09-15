@@ -18,7 +18,11 @@
         <tbody>
             {% for invoice in invoices %}
             <tr>
-                <td>{{ invoice.credit_card.name }}</td>
+                <td>
+                    <a href="{% url 'invoice_detail' invoice.pk %}">
+                        {{ invoice.credit_card.name }} | {{ invoice.due_date|date:"F/Y" }}
+                    </a>
+                </td>
                 <td>{{ invoice.end_date|date:"d/m/Y" }}</td>
                 <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
                 <td>
