@@ -15,7 +15,6 @@
             <div class="row text-center">
                 <div class="col">
                     <h5 class="card-title">Valor Total</h5>
-                    <p class="card-text fs-4">R$ {{ total|floatformat:2 }}</p>
                 </div>
                 <div class="col">
                     <h5 class="card-title">Data de Vencimento</h5>
@@ -41,8 +40,8 @@
             <tr>
                 <th>Data</th>
                 <th>Descrição</th>
-                <th>Valor</th>
                 <th>Categoria</th>
+                <th>Valor</th>
             </tr>
         </thead>
         <tbody>
@@ -50,8 +49,9 @@
             <tr>
                 <td>{{ transaction.date|date:"d/m/Y" }}</td>
                 <td>{{ transaction.description }}</td>
-                <td>R$ {{ transaction.amount }}</td>
                 <td>{{ transaction.category.name|default:"Sem Categoria" }}</td>
+                
+                {% include 'core/partials/_transaction_amount_cell.html' %}
             </tr>
             {% empty %}
             <tr>

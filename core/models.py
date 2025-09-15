@@ -203,6 +203,18 @@ class Transaction(models.Model):
         verbose_name="Fatura",
     )
 
+    @property
+    def account_display(self):
+        """
+        Returns the name of the associated bank account or credit card.
+        If neither is set, returns 'N/A'.
+        """
+        if self.bank_account:
+            return self.bank_account.name
+        elif self.credit_card:
+            return self.credit_card.name
+        return "N/A"
+
     def clean(self):
         """
         Validates that a transaction is associated with either a bank account or a credit card, but not both.

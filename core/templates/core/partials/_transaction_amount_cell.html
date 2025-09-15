@@ -1,0 +1,5 @@
+{% if transaction.transaction_type == 'OUT' %}
+    <td>- R$ {{ transaction.amount }}</td>
+{% else %}
+    <td style="color: green;">R$ {{ transaction.amount }}</td>
+{% endif %}
