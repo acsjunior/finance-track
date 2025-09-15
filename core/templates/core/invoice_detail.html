@@ -4,7 +4,7 @@
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>
-                <h1 class="mb-0">Detalhes da Fatura</h1>
+                <h1 class="mb-0">Fatura de {{ invoice.due_date|date:"F/Y" }}</h1>
                 <h6 class="card-subtitle mt-1 text-muted">
                     {{ invoice.credit_card.name }}
                 </h6>
@@ -15,6 +15,7 @@
             <div class="row text-center">
                 <div class="col">
                     <h5 class="card-title">Valor Total</h5>
+                    <p class="card-text fs-4">R$ {{ total|floatformat:2 }}</p>
                 </div>
                 <div class="col">
                     <h5 class="card-title">Data de Vencimento</h5>
@@ -34,7 +35,7 @@
         </div>
     </div>
 
-    <h2 class="mt-4">Transações da Fatura</h2>
+    <h2 class="mt-4">Lançamentos</h2>
     <table class="table table-striped table-hover">
         <thead>
             <tr>
