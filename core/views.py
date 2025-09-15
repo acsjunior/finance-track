@@ -1,7 +1,10 @@
+import datetime
+
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -30,9 +33,40 @@ class TransactionListView(ListView):
 
     def get_queryset(self):
         """
-        Returns a queryset of all transactions ordered by date (descending).
+        Returns a queryset of transactions filtered by year and month from URL kwargs.
+        Defaults to the current year and month if not provided.
+        Orders the transactions by date descending.
         """
-        return Transaction.objects.all().order_by("-date")
+        year = self.kwargs.get("year", timezone.now().year)
+        month = self.kwargs.get("month", timezone.now().month)
+
+        return Transaction.objects.filter(date__year=year, date__month=month).order_by(
+            "-date"
+        )
+
+    def get_context_data(self, **kwargs):
+        """
+        Extends the context data for the transaction list view.
+        Adds navigation for previous and next months, and the current month to the context.
+        """
+        context = super().get_context_data(**kwargs)
+
+        year = self.kwargs.get("year", timezone.now().year)
+        month = self.kwargs.get("month", timezone.now().month)
+        current_month_date = datetime.date(year, month, 1)
+
+        first_transaction = Transaction.objects.order_by("date").first()
+        if first_transaction and first_transaction.date < current_month_date:
+            context["prev_month"] = current_month_date - relativedelta(months=1)
+
+        last_transaction = Transaction.objects.order_by("date").last()
+        if last_transaction and last_transaction.date > (
+            current_month_date + relativedelta(months=1) - relativedelta(days=1)
+        ):
+            context["next_month"] = current_month_date + relativedelta(months=1)
+
+        context["current_month"] = current_month_date
+        return context
 
 
 class TransactionCreateView(CreateView):

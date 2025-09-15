@@ -4,6 +4,11 @@ from . import views
 
 urlpatterns = [
     path("", views.TransactionListView.as_view(), name="transaction_list"),
+    path(
+        "transactions/<int:year>/<int:month>/",
+        views.TransactionListView.as_view(),
+        name="transaction_list_by_month",
+    ),
     path("add/", views.TransactionCreateView.as_view(), name="transaction_add"),
     path(
         "<int:pk>/edit/", views.TransactionUpdateView.as_view(), name="transaction_edit"
