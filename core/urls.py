@@ -13,4 +13,11 @@ urlpatterns = [
         views.TransactionDeleteView.as_view(),
         name="transaction_delete",
     ),
+    # URLs for invoices:
+    path("invoices/", views.InvoiceListView.as_view(), name="invoice_list"),
+    path(
+        "invoices/<int:pk>/edit/",
+        views.InvoiceUpdateView.as_view(),
+        name="invoice_edit",
+    ),
 ]

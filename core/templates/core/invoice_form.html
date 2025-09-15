@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <h1>Editar Fatura</h1>
+            <h6 class="card-subtitle mb-2 text-muted">
+                {{ object.credit_card.name }} - Vencimento original: {{ object.due_date|date:"d/m/Y" }}
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-success">Salvar Alterações</button>
+                <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

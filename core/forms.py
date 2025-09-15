@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import BankAccount, CreditCard, Transaction
+from .models import BankAccount, CreditCard, Invoice, Transaction
 
 
 class TransactionForm(forms.ModelForm):
@@ -106,3 +106,20 @@ class TransactionForm(forms.ModelForm):
                 )
 
         return cleaned_data
+
+
+class InvoiceForm(forms.ModelForm):
+    """
+    Form for creating and updating Invoice instances.
+
+    Provides fields for editing the end date, due date, and payment status of an invoice.
+    """
+
+    class Meta:
+        # Configuration for InvoiceForm: model, fields, and widgets.
+        model = Invoice
+        fields = ["end_date", "due_date", "is_paid"]
+        widgets = {
+            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
+        }

@@ -3,8 +3,8 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from .forms import TransactionForm
-from .models import Transaction
+from .forms import InvoiceForm, TransactionForm
+from .models import Invoice, Transaction
 
 
 class TransactionListView(ListView):
@@ -114,3 +114,41 @@ class TransactionDeleteView(DeleteView):
     model = Transaction
     template_name = "core/transaction_confirm_delete.html"
     success_url = reverse_lazy("transaction_list")
+
+
+class InvoiceListView(ListView):
+    """
+    Displays a list of all invoices ordered by due date (descending).
+
+    Attributes:
+        model (Invoice): The model to list.
+        template_name (str): Template used for rendering.
+        context_object_name (str): Name of the context variable for invoices.
+    """
+
+    model = Invoice
+    template_name = "core/invoice_list.html"
+    context_object_name = "invoices"
+
+    def get_queryset(self):
+        """
+        Returns a queryset of all invoices ordered by due date (descending).
+        """
+        return Invoice.objects.all().order_by("-due_date")
+
+
+class InvoiceUpdateView(UpdateView):
+    """
+    View for updating an existing invoice.
+
+    Attributes:
+        model (Invoice): The model to update.
+        form_class (InvoiceForm): The form used for invoice update.
+        template_name (str): Template used for rendering the form.
+        success_url (str): URL to redirect after successful update.
+    """
+
+    model = Invoice
+    form_class = InvoiceForm
+    template_name = "core/invoice_form.html"
+    success_url = reverse_lazy("invoice_list")
