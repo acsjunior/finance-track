@@ -18,6 +18,17 @@ urlpatterns = [
         views.TransactionDeleteView.as_view(),
         name="transaction_delete",
     ),
+    # URLs for consolidated view:
+    path(
+        "consolidated/",
+        views.TransactionConsolidatedView.as_view(),
+        name="transaction_consolidated_list",
+    ),
+    path(
+        "consolidated/<int:year>/<int:month>/",
+        views.TransactionConsolidatedView.as_view(),
+        name="transaction_consolidated_list_by_month",
+    ),
     # URLs for invoices:
     path("invoices/", views.InvoiceListView.as_view(), name="invoice_list"),
     path(
