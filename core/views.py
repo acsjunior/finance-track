@@ -2,19 +2,20 @@ import datetime
 
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
+    FormView,
     ListView,
     TemplateView,
     UpdateView,
 )
 
-from .forms import InvoiceForm, TransactionForm
+from .forms import InvoiceForm, InvoicePaymentForm, TransactionForm
 from .models import Invoice, Transaction
 
 
@@ -374,3 +375,64 @@ class InvoiceDetailView(DetailView):
         context["total"] = total
 
         return context
+
+
+class InvoicePaymentView(FormView):
+    """
+    View for registering the payment of an invoice.
+
+    Displays a form for selecting the payment date and bank account, and creates a transaction to record the payment.
+
+    Context:
+        invoice (Invoice): The invoice being paid.
+    """
+
+    template_name = "core/invoice_payment_form.html"
+    form_class = InvoicePaymentForm
+
+    def get_context_data(self, **kwargs):
+        """
+        Extends the context data for the invoice payment form view.
+        Adds the invoice being paid to the context.
+
+        Context:
+            invoice (Invoice): The invoice being paid.
+        """
+        context = super().get_context_data(**kwargs)
+        context["invoice"] = get_object_or_404(Invoice, pk=self.kwargs["pk"])
+        return context
+
+    def form_valid(self, form):
+        """
+        Handles the submission of the invoice payment form.
+        Creates a transaction to record the payment, updates the invoice status and payment date, and saves changes.
+        Redirects to the success URL after processing.
+        """
+        invoice = get_object_or_404(Invoice, pk=self.kwargs["pk"])
+        payment_date = form.cleaned_data["payment_date"]
+        bank_account = form.cleaned_data["bank_account"]
+
+        total_amount = (
+            invoice.transaction_set.aggregate(Sum("amount"))["amount__sum"] or 0
+        )
+
+        Transaction.objects.create(
+            description=f"Pagamento Fatura {invoice.credit_card.name}",
+            amount=total_amount,
+            transaction_type="OUT",
+            date=payment_date,
+            bank_account=bank_account,
+            category=None,
+        )
+
+        invoice.is_paid = True
+        invoice.payment_date = payment_date
+        invoice.save()
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """
+        Returns the URL to redirect to after successful invoice payment.
+        """
+        return reverse_lazy("invoice_list")

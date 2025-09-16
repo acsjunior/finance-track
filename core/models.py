@@ -115,6 +115,9 @@ class Invoice(models.Model):
     end_date = models.DateField(verbose_name="Data de Fechamento")
     due_date = models.DateField(verbose_name="Data de Vencimento")
     is_paid = models.BooleanField(default=False, verbose_name="Paga?")
+    payment_date = models.DateField(
+        null=True, blank=True, verbose_name="Data do Pagamento"
+    )
 
     @property
     def start_date(self):

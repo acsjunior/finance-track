@@ -123,3 +123,24 @@ class InvoiceForm(forms.ModelForm):
             "end_date": forms.DateInput(attrs={"type": "date"}),
             "due_date": forms.DateInput(attrs={"type": "date"}),
         }
+
+
+class InvoicePaymentForm(forms.Form):
+    """
+    Form for registering the payment of an invoice.
+
+    Provides fields for selecting the payment date and the bank account to be debited.
+
+    Fields:
+        payment_date (DateField): Date when the invoice was paid.
+        bank_account (ModelChoiceField): Bank account to be debited for the payment.
+    """
+
+    payment_date = forms.DateField(
+        label="Data do Pagamento",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        required=True,
+    )
+    bank_account = forms.ModelChoiceField(
+        label="Debitar da Conta", queryset=BankAccount.objects.all(), required=True
+    )

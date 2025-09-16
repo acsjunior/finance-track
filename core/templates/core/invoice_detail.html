@@ -9,7 +9,12 @@
                     {{ invoice.credit_card.name }}
                 </h6>
             </span>
-            <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-secondary">Editar Fatura</a>
+            <div>
+                {% if not invoice.is_paid %}
+                    <a href="{% url 'invoice_pay' invoice.pk %}" class="btn btn-primary">Pagar</a>
+                {% endif %}
+                <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-secondary">Editar</a>
+            </div>
         </div>
         <div class="card-body">
             <div class="row text-center">

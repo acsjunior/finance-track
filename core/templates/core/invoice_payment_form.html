@@ -1,0 +1,18 @@
+{% extends 'core/partials/_form_base.html' %}
+
+{% block form_title %}Pagar Fatura{% endblock %}
+
+{% block form_subtitle %}
+    <h6 class="card-subtitle mb-2 text-muted">
+        {{ invoice.credit_card.name }} | Vencimento: {{ invoice.due_date|date:"d/m/Y" }}
+    </h6>
+{% endblock %}
+
+{% block form_body %}
+    {{ form.as_p }}
+{% endblock %}
+
+{% block form_actions %}
+    <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+    <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-secondary">Cancelar</a>
+{% endblock %}
