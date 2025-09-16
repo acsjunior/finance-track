@@ -19,18 +19,37 @@ from .models import Invoice, Transaction
 
 
 class MonthlyViewBase(TemplateView):
+    """
+    Base view for monthly financial summaries and navigation.
+
+    Centralizes logic for calculating previous balance, current month income and expenses, closing balance,
+    and month navigation. Child views must provide a list of items (transactions/invoices) in the context.
+
+    Context:
+        items (list): List of transaction/invoice dictionaries for the month.
+        previous_balance (float): Balance before the current month.
+        current_month_income (float): Total income for the current month.
+        current_month_expenses (float): Total expenses for the current month.
+        closing_balance (float): Final balance after current month transactions.
+        current_month (date): The first day of the selected month.
+        prev_month (date, optional): Date for previous month navigation.
+        next_month (date, optional): Date for next month navigation.
+    """
+
     template_name = "core/transaction_list.html"
 
     def get_context_data(self, **kwargs):
+        """
+        Extends the context data with financial calculations and navigation logic.
+        Child views must provide 'items' in the context, which is a list of dictionaries
+        representing transactions and/or invoices for the current month.
+        """
         context = super().get_context_data(**kwargs)
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
         current_month_date = datetime.date(year, month, 1)
-
-        # A classe base assume que a classe filha já forneceu a lista 'items'
         items = context.get("items", [])
 
-        # Lógica de cálculo de saldos (agora centralizada aqui)
         past_transactions = Transaction.objects.filter(date__lt=current_month_date)
         past_income = (
             past_transactions.filter(transaction_type="IN").aggregate(Sum("amount"))[
@@ -61,7 +80,7 @@ class MonthlyViewBase(TemplateView):
         context["current_month_expenses"] = current_month_expenses
         context["closing_balance"] = closing_balance
 
-        # Lógica de navegação (agora centralizada aqui)
+        # Navigation logic
         context["current_month"] = current_month_date
         first_transaction = Transaction.objects.order_by("date").first()
         if first_transaction and first_transaction.date < current_month_date:
@@ -76,10 +95,29 @@ class MonthlyViewBase(TemplateView):
         return context
 
 
-# --- CLASSES FILHAS SIMPLIFICADAS ---
 class TransactionListView(MonthlyViewBase):
+    """
+    Displays a detailed list of all transactions for the selected month.
+
+    Context:
+        items (list): List of transaction dictionaries for the month.
+        active_view (str): Indicates that the detailed view is active.
+        previous_balance (float): Balance before the current month.
+        current_month_income (float): Total income for the current month.
+        current_month_expenses (float): Total expenses for the current month.
+        closing_balance (float): Final balance after current month transactions.
+        current_month (date): The first day of the selected month.
+        prev_month (date, optional): Date for previous month navigation.
+        next_month (date, optional): Date for next month navigation.
+    """
+
     def get_context_data(self, **kwargs):
-        # 1. Pega o contexto da classe mãe (que ainda não tem 'items')
+        """ "
+        Extends the context data with a detailed list of transactions for the month.
+        Calls the parent method to add financial calculations and navigation logic.
+        Child views must provide 'items' in the context, which is a list of dictionaries
+        representing transactions and/or invoices for the current month.
+        """
         context = super().get_context_data(**kwargs)
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
@@ -88,7 +126,6 @@ class TransactionListView(MonthlyViewBase):
             date__year=year, date__month=month
         ).order_by("-date")
 
-        # 2. Cria a lista 'items' específica desta view
         items = []
         for transaction in transactions:
             items.append(
@@ -108,13 +145,32 @@ class TransactionListView(MonthlyViewBase):
         context["items"] = items
         context["active_view"] = "detailed"
 
-        # 3. Chama novamente o get_context_data da mãe, que agora com 'items', fará o resto
         return super().get_context_data(**context)
 
 
 class TransactionConsolidatedView(MonthlyViewBase):
+    """
+    Displays a consolidated list of all bank account transactions and paid invoices for the selected month.
+
+    Context:
+        items (list): List of transaction and invoice dictionaries for the month.
+        active_view (str): Indicates that the consolidated view is active.
+        previous_balance (float): Balance before the current month.
+        current_month_income (float): Total income for the current month.
+        current_month_expenses (float): Total expenses for the current month.
+        closing_balance (float): Final balance after current month transactions.
+        current_month (date): The first day of the selected month.
+        prev_month (date, optional): Date for previous month navigation.
+        next_month (date, optional): Date for next month navigation.
+    """
+
     def get_context_data(self, **kwargs):
-        # 1. Pega o contexto da classe mãe
+        """ "
+        Extends the context data with a consolidated list of bank transactions and paid invoices for the month.
+        Calls the parent method to add financial calculations and navigation logic.
+        Child views must provide 'items' in the context, which is a list of dictionaries
+        representing transactions and/or invoices for the current month.
+        """
         context = super().get_context_data(**kwargs)
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
@@ -126,7 +182,6 @@ class TransactionConsolidatedView(MonthlyViewBase):
             due_date__year=year, due_date__month=month, is_paid=True
         )
 
-        # 2. Cria a lista 'items' específica desta view
         items = []
         for transaction in bank_transactions:
             items.append(
@@ -163,7 +218,6 @@ class TransactionConsolidatedView(MonthlyViewBase):
         context["items"] = sorted(items, key=lambda x: x["date"], reverse=True)
         context["active_view"] = "consolidated"
 
-        # 3. Chama novamente o get_context_data da mãe para fazer o resto
         return super().get_context_data(**context)
 
 
