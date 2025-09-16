@@ -47,7 +47,8 @@ class TransactionListView(ListView):
     def get_context_data(self, **kwargs):
         """
         Extends the context data for the transaction list view.
-        Adds navigation for previous and next months, and the current month to the context.
+        Adds current month income, expenses, previous balance, and closing balance to the context.
+        Also adds navigation for previous and next months, and the current month.
         """
         context = super().get_context_data(**kwargs)
 
@@ -55,6 +56,45 @@ class TransactionListView(ListView):
         month = self.kwargs.get("month", timezone.now().month)
         current_month_date = datetime.date(year, month, 1)
 
+        current_month_transactions = context["transactions"]
+        current_month_income = (
+            current_month_transactions.filter(transaction_type="IN").aggregate(
+                Sum("amount")
+            )["amount__sum"]
+            or 0
+        )
+        current_month_expenses = (
+            current_month_transactions.filter(transaction_type="OUT").aggregate(
+                Sum("amount")
+            )["amount__sum"]
+            or 0
+        )
+
+        past_transactions = Transaction.objects.filter(date__lt=current_month_date)
+        past_income = (
+            past_transactions.filter(transaction_type="IN").aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+        past_expenses = (
+            past_transactions.filter(transaction_type="OUT").aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+        previous_balance = past_income - past_expenses
+
+        closing_balance = (
+            previous_balance + current_month_income - current_month_expenses
+        )
+
+        context["current_month_income"] = current_month_income
+        context["current_month_expenses"] = current_month_expenses
+        context["previous_balance"] = previous_balance
+        context["closing_balance"] = closing_balance
+
+        # Month navigation logic
         first_transaction = Transaction.objects.order_by("date").first()
         if first_transaction and first_transaction.date < current_month_date:
             context["prev_month"] = current_month_date - relativedelta(months=1)
@@ -66,6 +106,10 @@ class TransactionListView(ListView):
             context["next_month"] = current_month_date + relativedelta(months=1)
 
         context["current_month"] = current_month_date
+
+        print(
+            f">>> DEBUG: Tipo de despesa: {type(context['current_month_expenses'])}, Valor: {context['current_month_expenses']}"
+        )
         return context
 
 
