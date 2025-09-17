@@ -15,6 +15,17 @@ class Category(models.Model):
 
     name = models.CharField(max_length=100, unique=True, verbose_name="Nome")
 
+    @staticmethod
+    def get_payment_category():
+        """
+        Returns the default category for invoice payments, creating it if it does not exist.
+
+        Returns:
+            Category: Instance of the 'Invoice Payment' category.
+        """
+        category, created = Category.objects.get_or_create(name="Pagamento de Fatura")
+        return category
+
     def __str__(self):
         """
         Returns a human-readable string representation of the category (its name).

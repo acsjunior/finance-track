@@ -240,7 +240,7 @@ class TransactionConsolidatedView(MonthlyViewBase):
                 {
                     "date": invoice.due_date,
                     "description": f"Pagamento Fatura {invoice.credit_card.name}",
-                    "category": "Cartão de Crédito",
+                    "category": Category.get_payment_category().name,
                     "account_display": invoice.credit_card.name,
                     "amount": total_amount,
                     "transaction_type": "OUT",
@@ -449,9 +449,7 @@ class InvoicePaymentView(FormView):
             invoice.transaction_set.aggregate(Sum("amount"))["amount__sum"] or 0
         )
 
-        payment_category, created = Category.objects.get_or_create(
-            name="Cartão de Crédito"
-        )
+        payment_category = Category.get_payment_category()
 
         Transaction.objects.create(
             description=f"Pagamento Fatura {invoice.credit_card.name}",
