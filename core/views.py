@@ -21,29 +21,42 @@ from .models import Invoice, Transaction
 
 class MonthlyViewBase(TemplateView):
     """
-    Base view for monthly financial summaries and navigation.
+    Abstract base view that centralizes logic for monthly financial summaries and navigation.
 
-    Centralizes logic for calculating previous balance, current month income and expenses, closing balance,
-    and month navigation. Child views must provide a list of items (transactions/invoices) in the context.
+    Provides reusable calculations for current month income and expenses, previous balance, closing balance,
+    and month navigation. Child views must supply a list of items (transactions/invoices) in the context.
 
-    Context:
-        items (list): List of transaction/invoice dictionaries for the month.
-        previous_balance (float): Balance before the current month.
-        current_month_income (float): Total income for the current month.
-        current_month_expenses (float): Total expenses for the current month.
-        closing_balance (float): Final balance after current month transactions.
-        current_month (date): The first day of the selected month.
-        prev_month (date, optional): Date for previous month navigation.
-        next_month (date, optional): Date for next month navigation.
+    Attributes:
+        template_name (str): Template used for rendering the monthly view.
+        summary_type (str): Type of summary, either 'full' or 'simple'.
     """
 
     template_name = "core/transaction_list.html"
+    summary_type = "full"  # 'full' or 'simple'
 
     def get_context_data(self, **kwargs):
         """
-        Extends the context data with financial calculations and navigation logic.
-        Child views must provide 'items' in the context, which is a list of dictionaries
-        representing transactions and/or invoices for the current month.
+        Extends and enriches the context data for monthly financial views.
+
+        Calculates current month income and expenses, previous balance, closing balance, and navigation dates.
+        Adds summary values to the context based on the summary_type ('full' or 'simple').
+
+        Args:
+            **kwargs: Arbitrary keyword arguments passed to the view.
+
+        Returns:
+            dict: Context data including financial summaries and navigation keys.
+
+        Context keys added:
+            items (list): List of transaction/invoice dictionaries for the month.
+            current_month_income (float): Total income for the current month.
+            current_month_expenses (float): Total expenses for the current month.
+            monthly_balance (float, optional): Net balance for the month (simple summary).
+            previous_balance (float, optional): Balance before the current month (full summary).
+            closing_balance (float, optional): Final balance after current month transactions (full summary).
+            current_month (date): The first day of the selected month.
+            prev_month (date, optional): Date for previous month navigation.
+            next_month (date, optional): Date for next month navigation.
         """
         context = super().get_context_data(**kwargs)
         year = self.kwargs.get("year", timezone.now().year)
@@ -51,35 +64,41 @@ class MonthlyViewBase(TemplateView):
         current_month_date = datetime.date(year, month, 1)
         items = context.get("items", [])
 
-        past_transactions = Transaction.objects.filter(date__lt=current_month_date)
-        past_income = (
-            past_transactions.filter(transaction_type="IN").aggregate(Sum("amount"))[
-                "amount__sum"
-            ]
-            or 0
-        )
-        past_expenses = (
-            past_transactions.filter(transaction_type="OUT").aggregate(Sum("amount"))[
-                "amount__sum"
-            ]
-            or 0
-        )
-        previous_balance = past_income - past_expenses
-
         current_month_income = sum(
             item["amount"] for item in items if item["transaction_type"] == "IN"
         )
         current_month_expenses = sum(
             item["amount"] for item in items if item["transaction_type"] == "OUT"
         )
-        closing_balance = (
-            previous_balance + current_month_income - current_month_expenses
-        )
 
-        context["previous_balance"] = previous_balance
         context["current_month_income"] = current_month_income
         context["current_month_expenses"] = current_month_expenses
-        context["closing_balance"] = closing_balance
+
+        # Conditional logic based on summary_type "switch"
+        if self.summary_type == "simple":
+            context["monthly_balance"] = current_month_income - current_month_expenses
+
+        elif self.summary_type == "full":
+            past_transactions = Transaction.objects.filter(date__lt=current_month_date)
+            past_income = (
+                past_transactions.filter(transaction_type="IN").aggregate(
+                    Sum("amount")
+                )["amount__sum"]
+                or 0
+            )
+            past_expenses = (
+                past_transactions.filter(transaction_type="OUT").aggregate(
+                    Sum("amount")
+                )["amount__sum"]
+                or 0
+            )
+            previous_balance = past_income - past_expenses
+            closing_balance = (
+                previous_balance + current_month_income - current_month_expenses
+            )
+
+            context["previous_balance"] = previous_balance
+            context["closing_balance"] = closing_balance
 
         # Navigation logic
         context["current_month"] = current_month_date
@@ -98,34 +117,48 @@ class MonthlyViewBase(TemplateView):
 
 class TransactionListView(MonthlyViewBase):
     """
-    Displays a detailed list of all transactions for the selected month.
+    Displays a detailed list of all bank account transactions for the selected month, excluding invoice payments.
 
-    Context:
-        items (list): List of transaction dictionaries for the month.
-        active_view (str): Indicates that the detailed view is active.
-        previous_balance (float): Balance before the current month.
-        current_month_income (float): Total income for the current month.
-        current_month_expenses (float): Total expenses for the current month.
-        closing_balance (float): Final balance after current month transactions.
-        current_month (date): The first day of the selected month.
-        prev_month (date, optional): Date for previous month navigation.
-        next_month (date, optional): Date for next month navigation.
+    Inherits from MonthlyViewBase and uses the simple summary to show monthly balance, income, and expenses.
+
+    Attributes:
+        summary_type (str): Type of financial summary displayed ('simple').
     """
 
+    summary_type = "simple"
+
     def get_context_data(self, **kwargs):
-        """ "
-        Extends the context data with a detailed list of transactions for the month.
-        Calls the parent method to add financial calculations and navigation logic.
-        Child views must provide 'items' in the context, which is a list of dictionaries
-        representing transactions and/or invoices for the current month.
         """
-        context = super().get_context_data(**kwargs)
+        Generates the context for the detailed view of transactions for the selected month.
+
+        Filters and organizes bank transactions for the month, excluding invoice payments, and prepares the data for the template.
+        Adds the items to the context and calls the base class method for financial calculations.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            dict: Context containing the list of transactions, active view type, and monthly financial summaries.
+
+        Context keys added:
+            items (list): List of transaction dictionaries for the month.
+            active_view (str): Indicates that the detailed view is active.
+            current_month_income (float): Total income for the month.
+            current_month_expenses (float): Total expenses for the month.
+            monthly_balance (float): Net balance for the month.
+            current_month (date): First day of the selected month.
+            prev_month (date, optional): Date for navigation to the previous month.
+            next_month (date, optional): Date for navigation to the next month.
+        """
+        context = {}
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
 
-        transactions = Transaction.objects.filter(
-            date__year=year, date__month=month
-        ).order_by("-date")
+        transactions = (
+            Transaction.objects.filter(date__year=year, date__month=month)
+            .exclude(description__startswith="Pagamento Fatura")
+            .order_by("-date")
+        )
 
         items = []
         for transaction in transactions:
