@@ -1,7 +1,7 @@
 import datetime
 
 from dateutil.relativedelta import relativedelta
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -19,41 +19,31 @@ from .forms import InvoiceForm, InvoicePaymentForm, TransactionForm
 from .models import Category, Invoice, Transaction
 
 
-class MonthlyViewBase(TemplateView):
+class MonthlyNavigationMixin:
     """
-    Abstract base view that centralizes logic for monthly financial summaries and navigation.
+    Mixin that adds month-based navigation context to views.
 
-    Provides reusable calculations for current month income and expenses, previous balance, closing balance,
-    and month navigation. Child views must supply a list of items (transactions/invoices) in the context.
+    Provides context keys for the current, previous, and next months based on transaction dates.
+    Intended for use in views that display monthly financial data.
 
     Attributes:
-        template_name (str): Template used for rendering the monthly view.
-        summary_type (str): Type of summary, either 'full' or 'simple'.
+        None
     """
-
-    template_name = "core/transaction_list.html"
-    summary_type = "full"  # 'full' or 'simple'
 
     def get_context_data(self, **kwargs):
         """
-        Extends and enriches the context data for monthly financial views.
+        Extends context with navigation keys for monthly financial views.
 
-        Calculates current month income and expenses, previous balance, closing balance, and navigation dates.
-        Adds summary values to the context based on the summary_type ('full' or 'simple').
+        Adds the current month, previous month (if available), and next month (if available) to the context.
+        Navigation is determined by the earliest and latest transaction dates in the database.
 
         Args:
             **kwargs: Arbitrary keyword arguments passed to the view.
 
         Returns:
-            dict: Context data including financial summaries and navigation keys.
+            dict: Context data including navigation keys for current, previous, and next months.
 
         Context keys added:
-            items (list): List of transaction/invoice dictionaries for the month.
-            current_month_income (float): Total income for the current month.
-            current_month_expenses (float): Total expenses for the current month.
-            monthly_balance (float, optional): Net balance for the month (simple summary).
-            previous_balance (float, optional): Balance before the current month (full summary).
-            closing_balance (float, optional): Final balance after current month transactions (full summary).
             current_month (date): The first day of the selected month.
             prev_month (date, optional): Date for previous month navigation.
             next_month (date, optional): Date for next month navigation.
@@ -62,45 +52,7 @@ class MonthlyViewBase(TemplateView):
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
         current_month_date = datetime.date(year, month, 1)
-        items = context.get("items", [])
 
-        current_month_income = sum(
-            item["amount"] for item in items if item["transaction_type"] == "IN"
-        )
-        current_month_expenses = sum(
-            item["amount"] for item in items if item["transaction_type"] == "OUT"
-        )
-
-        context["current_month_income"] = current_month_income
-        context["current_month_expenses"] = current_month_expenses
-
-        # Conditional logic based on summary_type "switch"
-        if self.summary_type == "simple":
-            context["monthly_balance"] = current_month_income - current_month_expenses
-
-        elif self.summary_type == "full":
-            past_transactions = Transaction.objects.filter(date__lt=current_month_date)
-            past_income = (
-                past_transactions.filter(transaction_type="IN").aggregate(
-                    Sum("amount")
-                )["amount__sum"]
-                or 0
-            )
-            past_expenses = (
-                past_transactions.filter(transaction_type="OUT").aggregate(
-                    Sum("amount")
-                )["amount__sum"]
-                or 0
-            )
-            previous_balance = past_income - past_expenses
-            closing_balance = (
-                previous_balance + current_month_income - current_month_expenses
-            )
-
-            context["previous_balance"] = previous_balance
-            context["closing_balance"] = closing_balance
-
-        # Navigation logic
         context["current_month"] = current_month_date
         first_transaction = Transaction.objects.order_by("date").first()
         if first_transaction and first_transaction.date < current_month_date:
@@ -115,24 +67,24 @@ class MonthlyViewBase(TemplateView):
         return context
 
 
-class TransactionListView(MonthlyViewBase):
+class TransactionListView(MonthlyNavigationMixin, TemplateView):
     """
     Displays a detailed list of all bank account transactions for the selected month, excluding invoice payments.
 
-    Inherits from MonthlyViewBase and uses the simple summary to show monthly balance, income, and expenses.
+    Inherits from MonthlyNavigationMixin and uses a simple summary to show monthly balance, income, and expenses.
 
     Attributes:
-        summary_type (str): Type of financial summary displayed ('simple').
+        template_name (str): Template used for rendering the transaction list view.
     """
 
-    summary_type = "simple"
+    template_name = "core/transaction_list.html"
 
     def get_context_data(self, **kwargs):
         """
-        Generates the context for the detailed view of transactions for the selected month.
+        Generates context for the detailed transaction view of the selected month.
 
-        Filters and organizes bank transactions for the month, excluding invoice payments, and prepares the data for the template.
-        Adds the items to the context and calls the base class method for financial calculations.
+        Filters and organizes bank account transactions for the month, excluding invoice payments, and prepares data for the template.
+        Adds items to the context and calls the mixin method for month navigation keys.
 
         Args:
             **kwargs: Arbitrary keyword arguments.
@@ -147,16 +99,17 @@ class TransactionListView(MonthlyViewBase):
             current_month_expenses (float): Total expenses for the month.
             monthly_balance (float): Net balance for the month.
             current_month (date): First day of the selected month.
-            prev_month (date, optional): Date for navigation to the previous month.
-            next_month (date, optional): Date for navigation to the next month.
+            prev_month (date, optional): Date for previous month navigation.
+            next_month (date, optional): Date for next month navigation.
         """
-        context = {}
+        context = super().get_context_data(**kwargs)
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
 
+        # Lógica de itens
         transactions = (
             Transaction.objects.filter(date__year=year, date__month=month)
-            .exclude(description__startswith="Pagamento Fatura")
+            .exclude(is_invoice_payment=True)
             .order_by("-date")
         )
 
@@ -177,43 +130,84 @@ class TransactionListView(MonthlyViewBase):
                 }
             )
         context["items"] = items
+
+        # Lógica de resumo simples
+        current_month_income = (
+            transactions.filter(transaction_type="IN").aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+        current_month_expenses = (
+            transactions.filter(transaction_type="OUT").aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+
+        context["current_month_income"] = current_month_income
+        context["current_month_expenses"] = current_month_expenses
+        context["monthly_balance"] = current_month_income - current_month_expenses
+
         context["active_view"] = "detailed"
+        return context
 
-        return super().get_context_data(**context)
 
-
-class TransactionConsolidatedView(MonthlyViewBase):
+class TransactionConsolidatedView(MonthlyNavigationMixin, TemplateView):
     """
-    Displays a consolidated list of all bank account transactions and paid invoices for the selected month.
+    Displays a consolidated list of all bank account transactions and invoices for the selected month.
 
-    Context:
-        items (list): List of transaction and invoice dictionaries for the month.
-        active_view (str): Indicates that the consolidated view is active.
-        previous_balance (float): Balance before the current month.
-        current_month_income (float): Total income for the current month.
-        current_month_expenses (float): Total expenses for the current month.
-        closing_balance (float): Final balance after current month transactions.
-        current_month (date): The first day of the selected month.
-        prev_month (date, optional): Date for previous month navigation.
-        next_month (date, optional): Date for next month navigation.
+    Combines realized and predicted expenses, including paid and unpaid invoices, and provides both real and predicted balances.
+    Inherits from MonthlyNavigationMixin to enable month navigation in the context.
+
+    Attributes:
+        template_name (str): Template used for rendering the consolidated transaction view.
     """
+
+    template_name = "core/transaction_list.html"
 
     def get_context_data(self, **kwargs):
-        """ "
-        Extends the context data with a consolidated list of bank transactions and paid invoices for the month.
-        Calls the parent method to add financial calculations and navigation logic.
-        Child views must provide 'items' in the context, which is a list of dictionaries
-        representing transactions and/or invoices for the current month.
         """
-        context = super().get_context_data(**kwargs)
+        Generates context for the consolidated transaction and invoice view of the selected month.
+
+        Collects bank account transactions and relevant invoices, calculates realized and predicted balances, and prepares data for the template.
+        Adds items to the context and calls the mixin method for month navigation keys.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            dict: Context containing the list of transactions and invoices, financial summaries, and navigation keys.
+
+        Context keys added:
+            items (list): List of transaction and invoice dictionaries for the month.
+            previous_balance (float): Balance before the current month.
+            realized_income (float): Total realized income for the month.
+            predicted_income (float): Total predicted income for the month.
+            realized_expenses (float): Total realized expenses for the month.
+            predicted_expenses (float): Total predicted expenses for the month (including unpaid invoices).
+            real_balance (float): Realized balance after current month transactions.
+            predicted_balance (float): Predicted balance including unpaid invoices.
+            active_view (str): Indicates that the consolidated view is active.
+            current_month (date): First day of the selected month.
+            prev_month (date, optional): Date for previous month navigation.
+            next_month (date, optional): Date for next month navigation.
+        """
+        context = {}
         year = self.kwargs.get("year", timezone.now().year)
         month = self.kwargs.get("month", timezone.now().month)
+        current_month_date = datetime.date(year, month, 1)
 
         bank_transactions = Transaction.objects.filter(
-            date__year=year, date__month=month, bank_account__isnull=False
+            date__year=year,
+            date__month=month,
+            bank_account__isnull=False,
+            is_invoice_payment=False,
         )
-        paid_invoices = Invoice.objects.filter(
-            due_date__year=year, due_date__month=month, is_paid=True
+
+        relevant_invoices = Invoice.objects.filter(
+            Q(due_date__year=year, due_date__month=month, is_paid=False)
+            | Q(payment_date__year=year, payment_date__month=month, is_paid=True)
         )
 
         items = []
@@ -229,29 +223,84 @@ class TransactionConsolidatedView(MonthlyViewBase):
                     "amount": transaction.amount,
                     "transaction_type": transaction.transaction_type,
                     "is_invoice": False,
+                    "is_predicted": False,
                     "object": transaction,
                 }
             )
-        for invoice in paid_invoices:
+
+        for invoice in relevant_invoices:
+            display_date = invoice.payment_date if invoice.is_paid else invoice.due_date
             total_amount = (
                 invoice.transaction_set.aggregate(Sum("amount"))["amount__sum"] or 0
             )
             items.append(
                 {
-                    "date": invoice.due_date,
+                    "date": display_date,
                     "description": invoice.display_description,
-                    "category": Category.get_payment_category().name,
+                    "category": "Cartão de Crédito",
                     "account_display": invoice.credit_card.name,
                     "amount": total_amount,
                     "transaction_type": "OUT",
                     "is_invoice": True,
+                    "is_predicted": not invoice.is_paid,
                     "object": invoice,
                 }
             )
 
         context["items"] = sorted(items, key=lambda x: x["date"], reverse=True)
-        context["active_view"] = "consolidated"
 
+        # Lógica de resumo
+        past_transactions = Transaction.objects.filter(
+            date__lt=current_month_date,
+            bank_account__isnull=False,
+        )
+        past_income = (
+            past_transactions.filter(transaction_type="IN").aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+        past_expenses = (
+            past_transactions.filter(transaction_type="OUT").aggregate(Sum("amount"))[
+                "amount__sum"
+            ]
+            or 0
+        )
+        previous_balance = past_income - past_expenses
+
+        realized_income = sum(
+            item["amount"]
+            for item in items
+            if item["transaction_type"] == "IN" and not item.get("is_predicted", False)
+        )
+        realized_expenses = sum(
+            item["amount"]
+            for item in items
+            if item["transaction_type"] == "OUT" and not item.get("is_predicted", False)
+        )
+
+        predicted_expenses_from_invoices = sum(
+            item["amount"] for item in items if item.get("is_predicted", False)
+        )
+        predicted_income = realized_income
+        predicted_expenses = realized_expenses + predicted_expenses_from_invoices
+
+        real_balance = previous_balance + realized_income - realized_expenses
+        predicted_balance = previous_balance + predicted_income - predicted_expenses
+
+        context.update(
+            {
+                "previous_balance": previous_balance,
+                "realized_income": realized_income,
+                "predicted_income": predicted_income,
+                "realized_expenses": realized_expenses,
+                "predicted_expenses": predicted_expenses,
+                "real_balance": real_balance,
+                "predicted_balance": predicted_balance,
+            }
+        )
+
+        context["active_view"] = "consolidated"
         return super().get_context_data(**context)
 
 
