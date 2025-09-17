@@ -206,6 +206,10 @@ class Transaction(models.Model):
         verbose_name="Fatura",
     )
 
+    is_invoice_payment = models.BooleanField(
+        default=False, verbose_name="É Pagamento de Fatura?"
+    )
+
     @property
     def account_display(self):
         """

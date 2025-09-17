@@ -16,7 +16,7 @@ from django.views.generic import (
 )
 
 from .forms import InvoiceForm, InvoicePaymentForm, TransactionForm
-from .models import Invoice, Transaction
+from .models import Category, Invoice, Transaction
 
 
 class MonthlyViewBase(TemplateView):
@@ -449,13 +449,18 @@ class InvoicePaymentView(FormView):
             invoice.transaction_set.aggregate(Sum("amount"))["amount__sum"] or 0
         )
 
+        payment_category, created = Category.objects.get_or_create(
+            name="Cartão de Crédito"
+        )
+
         Transaction.objects.create(
             description=f"Pagamento Fatura {invoice.credit_card.name}",
             amount=total_amount,
             transaction_type="OUT",
             date=payment_date,
             bank_account=bank_account,
-            category=None,
+            category=payment_category,
+            is_invoice_payment=True,
         )
 
         invoice.is_paid = True
