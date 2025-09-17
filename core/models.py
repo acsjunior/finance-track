@@ -23,7 +23,7 @@ class Category(models.Model):
         Returns:
             Category: Instance of the 'Invoice Payment' category.
         """
-        category, created = Category.objects.get_or_create(name="Pagamento de Fatura")
+        category, created = Category.objects.get_or_create(name="Cartão de Crédito")
         return category
 
     def __str__(self):
