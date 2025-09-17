@@ -20,7 +20,13 @@
                     {% for item in items %}
                     <tr>
                         <td>{{ item.date|date:"d/m/Y" }}</td>
-                        <td>{{ item.description }}</td>
+                        <td>
+                            {% if item.is_invoice %}
+                                Fatura {{ item.object.due_date|date:"F Y" }} ({{ item.object.credit_card.name }})
+                            {% else %}
+                                {{ item.description }}
+                            {% endif %}
+                        </td>
                         <td>{{ item.category }}</td>
                         <td>{{ item.account_display }}</td>
 

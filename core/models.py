@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import formats
 
 
 class Category(models.Model):
@@ -148,6 +149,17 @@ class Invoice(models.Model):
             return previous_invoice.end_date + timedelta(days=1)
 
         return self.end_date - timedelta(days=29)
+
+    @property
+    def display_description(self):
+        """
+        Returns a formatted description for the invoice, including the month, year, and credit card name.
+
+        Returns:
+            str: Description in the format 'Invoice Month Year (Credit Card Name)'.
+        """
+        formatted_date = formats.date_format(self.due_date, "F Y")
+        return f"Fatura {formatted_date} ({self.credit_card.name})"
 
     def __str__(self):
         """
